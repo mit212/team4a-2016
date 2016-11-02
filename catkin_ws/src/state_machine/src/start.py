@@ -1,13 +1,20 @@
 class Start(State):
     def __init__(self, currentInput):
         self.currentInput = currentInput
-        self.nextInput = 2
-        self.nextState = Search(nextInput)
         self.canStart = False
     
     def run(self):
         # wait for start signal - modify canStart
         pass
     
+    def nextInput(self):
+        return 2
+
+    def nextState(self):
+        return Search
+
     def isFinished(self):
         return canStart
+
+    def isStopState(self):
+        return False
