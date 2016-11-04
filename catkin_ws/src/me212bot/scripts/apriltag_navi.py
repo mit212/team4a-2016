@@ -15,7 +15,7 @@ import tf.transformations as tfm
 
 from me212base.msg import WheelVelCmd
 from apriltags.msg import AprilTagDetections
-import helper
+import me212helper.helper as helper
 
 class ApriltagNavigator():
     def __init__(self, constant_vel = True):
@@ -38,6 +38,7 @@ class ApriltagNavigator():
         # use apriltag pose detection to find where is the robot
         ##
         for detection in data.detections:
+            print detection.pose.position.x, detection.pose.position.y, detection.pose.position.z
             if detection.id == 0: 
                 pose_tag_base = helper.poseTransform(helper.pose2list(detection.pose),  homeFrame = '/camera', targetFrame = '/base_link', listener = self.listener)
                 pose_base_map = helper.poseTransform(helper.invPoseList(pose_tag_base), homeFrame = '/apriltag', targetFrame = '/map', listener = self.listener)
@@ -47,7 +48,7 @@ class ApriltagNavigator():
         while not rospy.is_shutdown() :
             wv = WheelVelCmd()
             self.velcmd_pub.publish(wv) 
-            rospy.sleep(0.01) 
+            rospy.sleep(0.01)
         
     def navi_loop(self):
         ##
