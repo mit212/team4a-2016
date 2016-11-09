@@ -5,7 +5,7 @@ class Start(State):
     
     def run(self):
         # wait for start signal - modify canStart
-        pass
+        self.canStart = True
     
     def nextInput(self):
         return 2
