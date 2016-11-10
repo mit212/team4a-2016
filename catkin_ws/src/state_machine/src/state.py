@@ -10,6 +10,7 @@ currentInput: an integer that describes the input to the running state. For exam
 class State():
     __metaclass__ = ABCMeta
     
+    
     """
     Run one iteration of the state. Since the state machine itself handles looping,
     there is no need to implement that inside this method.

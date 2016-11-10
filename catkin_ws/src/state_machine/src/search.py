@@ -12,6 +12,8 @@ from me212base.msg import WheelVelCmd
 from apriltags.msg import AprilTagDetections
 import me212helper.helper as helper
 
+from state import State
+
 class Search(State):
     def __init__(self, current_input):
         self.current_input = current_input
@@ -21,7 +23,8 @@ class Search(State):
         
     def run(self):
         if self.current_input in self.tags_in_view:
-            self.found_target = True
+            print "found target"
+            #self.found_target = True
     
     def nextInput(self):
         return 0 # change later

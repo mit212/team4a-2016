@@ -1,3 +1,6 @@
+from state import State
+from search import Search
+
 class Start(State):
     def __init__(self, currentInput):
         self.currentInput = currentInput
@@ -14,7 +17,7 @@ class Start(State):
         return Search
 
     def isFinished(self):
-        return canStart
+        return self.canStart
 
     def isStopState(self):
         return False
