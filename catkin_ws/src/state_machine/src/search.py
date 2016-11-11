@@ -31,7 +31,7 @@ class Search(State):
         return 0 # change later
 
     def next_state(self):
-        return Stop
+        return Stop(self.next_input())
 
     def is_finished(self):
         return self.found_target

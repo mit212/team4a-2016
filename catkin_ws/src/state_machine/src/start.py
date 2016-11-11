@@ -14,7 +14,7 @@ class Start(State):
         return 2
 
     def next_state(self):
-        return Search
+        return Search(self.next_input())
 
     def is_finished(self):
         return self.can_start

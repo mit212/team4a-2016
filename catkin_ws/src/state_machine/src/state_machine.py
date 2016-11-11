@@ -32,7 +32,7 @@ class StateMachine():
             while not current_state.is_finished():
                 current_state.run()
             print current_state.next_input()
-            current_state = current_state.next_state()(current_state.next_input())
+            current_state = current_state.next_state()
             # publish things here
         print "done"
         
