@@ -70,7 +70,8 @@ def transformPose(lr, pose, sourceFrame, targetFrame):
             p = _pose_target.pose.position
             o = _pose_target.pose.orientation
             return [p.x, p.y, p.z, o.x, o.y, o.z, o.w]
-        except: 
+        except Exception as e:
+            print e 
             print '[transformPose] failed to transform targetFrame %s sourceFrame %s, retry %d' % (targetFrame, sourceFrame, i)
             rospy.sleep(retryTime)
             

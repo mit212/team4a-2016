@@ -14,6 +14,7 @@ import me212helper.helper as helper
 
 from state import State
 from stop import Stop
+from drive import Drive
 
 class Search(State):
     def __init__(self, current_input):
@@ -28,10 +29,10 @@ class Search(State):
             self.found_target = True
     
     def next_input(self):
-        return 0 # change later
+        return self.current_input # maybe change later
 
     def next_state(self):
-        return Stop(self.next_input())
+        return Drive(self.next_input())
 
     def is_finished(self):
         return self.found_target

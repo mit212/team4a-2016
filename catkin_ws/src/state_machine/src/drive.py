@@ -1,8 +1,3 @@
-#!/usr/bin/python
-
-# 2.12 Lab 3 AprilTag Navigation: use AprilTag for current global robot (X,Y,Theta), and to navigate to target (X,Y,Theta)
-# Peter Yu Sept 2016
-
 import rospy
 import tf
 import numpy as np
@@ -17,48 +12,62 @@ from me212base.msg import WheelVelCmd
 from apriltags.msg import AprilTagDetections
 import me212helper.helper as helper
 
-class ApriltagNavigator():
-    def __init__(self, constant_vel = True):
+from state import State
+from stop import Stop
+
+class Drive(State):
+    def __init__(self, current_input):
+        self.current_input = current_input
+        self.arrived = False
+        self.tags_in_view = []
+        self.detection_pose = None
+        
         self.listener = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
+        
         self.apriltag_sub = rospy.Subscriber("/apriltags/detections", AprilTagDetections, self.apriltag_callback, queue_size = 1)
+        self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
         
-        self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)   ##
+        self.thread = threading.Thread(target = self.drive)
         
-        if constant_vel:
-            self.thread = threading.Thread(target = self.constant_vel_loop)
-        else:
-            self.thread = threading.Thread(target = self.navi_loop)
-            
-        self.thread.start()
-        
-        rospy.sleep(1)
+    def run(self):
+        if self.current_input in self.tags_in_view:
+            #print "driving to apriltag", self.current_input
+            #print helper.invPoselist
+            pose_tag_base = helper.transformPose(pose = helper.pose2poselist(self.detection_pose),  sourceFrame = '/camera', targetFrame = '/base_link', lr = self.listener)
+            #print "pose_tag_base", pose_tag_base
+            pose_base_map = helper.transformPose(pose = helper.invPoselist(pose_tag_base), sourceFrame = '/apriltag', targetFrame = '/map', lr = self.listener)
+            helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/base_link', parent_frame_id = '/map', npub = 1)
+    
+    def next_input(self):
+        return 0 # change later
+
+    def next_state(self):
+        return Stop(self.next_input())
+
+    def is_finished(self):
+        return self.arrived
+
+    def is_stop_state(self):
+        return False
         
     def apriltag_callback(self, data):
-        # use apriltag pose detection to find where is the robot
-        ##
+        del self.tags_in_view[:]
         for detection in data.detections:
-            print detection.pose.position.x, detection.pose.position.y, detection.pose.position.z
-            if detection.id == 0: 
-                pose_tag_base = helper.poseTransform(helper.pose2list(detection.pose),  homeFrame = '/camera', targetFrame = '/base_link', listener = self.listener)
-                pose_base_map = helper.poseTransform(helper.invPoseList(pose_tag_base), homeFrame = '/apriltag', targetFrame = '/map', listener = self.listener)
-                helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/base_link', parent_frame_id = '/map', npub = 1)
-
-    def constant_vel_loop(self):
-        while not rospy.is_shutdown() :
-            wv = WheelVelCmd()
-            self.velcmd_pub.publish(wv) 
-            rospy.sleep(0.01)
-        
-    def navi_loop(self):
+            #print detection.pose.position.x, detection.pose.position.y, detection.pose.position.z
+            self.tags_in_view.append(detection.id)
+            self.detection_pose = detection.pose
+    
+    # probably put this code in the run method, this just here for testing
+    def drive(self):
+        print "driving"
         ##
         target_pose2d = [0.25, 0, np.pi]
         
         ##
         wv = WheelVelCmd()
         
-        ## 
-        arrived = False
+        ##
         arrived_position = False
         
         while not rospy.is_shutdown() :
@@ -96,11 +105,11 @@ class ApriltagNavigator():
             # print 'norm delta', np.linalg.norm( pos_delta ), 'diffrad', diffrad(robot_yaw, target_pose2d[2])
             # print 'heading_err_cross', heading_err_cross
             
-            if arrived or (np.linalg.norm( pos_delta ) < 0.08 and np.fabs(diffrad(robot_yaw, target_pose2d[2]))<0.05) :
+            if self.arrived or (np.linalg.norm( pos_delta ) < 0.08 and np.fabs(diffrad(robot_yaw, target_pose2d[2]))<0.05) :
                 print 'Case 2.1  Stop'
                 wv.desiredWV_R = 0  
                 wv.desiredWV_L = 0
-                arrived = True
+                self.arrived = True
             elif np.linalg.norm( pos_delta ) < 0.08:
                 arrived_position = True
                 if diffrad(robot_yaw, target_pose2d[2]) > 0:
@@ -129,12 +138,4 @@ class ApriltagNavigator():
             self.velcmd_pub.publish(wv)  
             
             rospy.sleep(0.01)
-    
-def main():
-    rospy.init_node('me212_robot', anonymous=True)
-    april_navi = ApriltagNavigator()
-    rospy.spin()
 
-if __name__=='__main__':
-    main()
-    

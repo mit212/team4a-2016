@@ -16,13 +16,13 @@ from cv_bridge import CvBridge, CvBridgeError
 import message_filters
 import math
 
-rospy.init_node('object_detection', anonymous=True)
+rospy.init_node('obstacle_detection', anonymous=True)
 
 # Publisher for publishing pyramid marker in rviz
 vis_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10) 
 
 # Bridge to convert ROS Image type to OpenCV Image type
-cv_bridge = CvBridge()
+cv_bridge = CvBridge()  
 
 # Get the camera calibration parameter for the rectified image
 msg = rospy.wait_for_message('/camera/rgb/camera_info', CameraInfo, timeout=None) 
@@ -37,7 +37,7 @@ cy = msg.P[6]
 
 def main():
     useHSV   = False 
-    useDepth = False
+    useDepth = True
     if not useHSV:
         # Task 1
         
@@ -45,7 +45,7 @@ def main():
         cv2.namedWindow("OpenCV_View")
         
         # 2. set callback func for mouse hover event
-        #cv2.setMouseCallback("OpenCV_View", cvWindowMouseCallBackFunc)
+        cv2.setMouseCallback("OpenCV_View", cvWindowMouseCallBackFunc)
         
         # 3. subscribe to image
         rospy.Subscriber('/camera/rgb/image_rect_color', Image, rosImageVizCallback)
@@ -74,11 +74,8 @@ def rosImageVizCallback(msg):
         print(e)
 
     # 2. visualize it in a cv window
-    cv2.startWindowThread()
     cv2.imshow("OpenCV_View", cv_image)
     cv2.waitKey(3)
-    cv2.destroyAllWindows()
-    cv2.waitKey(1)
 
 # Task 1 callback for mouse event
 def cvWindowMouseCallBackFunc(event, xp, yp, flags, param):
