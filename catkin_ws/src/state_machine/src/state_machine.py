@@ -28,10 +28,10 @@ class StateMachine():
         print "running"
         current_state = Start(0)
         while not current_state.is_stop_state():
-            print current_state.current_input
+            print "current input", current_state.current_input
             while not current_state.is_finished():
                 current_state.run()
-            print current_state.next_input()
+            print "next input", current_state.next_input()
             current_state = current_state.next_state()
             # publish things here
         print "done"

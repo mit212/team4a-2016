@@ -3,10 +3,9 @@ from state import State
 class Stop(State):
     def __init__(self, current_input):
         self.current_input = current_input
-        self.can_start = False
     
     def run(self):
-        self.can_start = True
+        pass
     
     def next_input(self):
         return 0
@@ -15,7 +14,7 @@ class Stop(State):
         return None
 
     def is_finished(self):
-        return self.can_start
+        return True
 
     def is_stop_state(self):
         return True

@@ -40,8 +40,6 @@ class Search(State):
         return False
         
     def apriltag_callback(self, data):
-        # use apriltag pose detection to find where is the robot
-        ##
         del self.tags_in_view[:]
         for detection in data.detections:
             #print detection.pose.position.x, detection.pose.position.y, detection.pose.position.z
