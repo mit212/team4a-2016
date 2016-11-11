@@ -26,17 +26,17 @@ class Search(State):
             print "found target"
             #self.found_target = True
     
-    def nextInput(self):
+    def next_input(self):
         return 0 # change later
 
-    def nextState(self):
-        return Drive
+    def next_state(self):
+        return Stop
 
-    def isFinished(self):
+    def is_finished(self):
         return self.found_target
 
-    def isStopState(self):
-        return True
+    def is_stop_state(self):
+        return False
         
     def apriltag_callback(self, data):
         # use apriltag pose detection to find where is the robot

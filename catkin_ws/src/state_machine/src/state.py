@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 Generic class that describes a state. This class cannot be directly instantiated.
 In addition to the following methods, every state should have the following fields:
 
-currentInput: an integer that describes the input to the running state. For example,
+current_input: an integer that describes the input to the running state. For example,
               if the state represents searching for AprilTag 2, currentInput would be 2.
 """
 class State():
@@ -23,26 +23,26 @@ class State():
     Return the input to the next state.
     """
     @abstractmethod
-    def nextInput(self):
+    def next_input(self):
         return None
 
     """
     Return the next state to run.
     """
     @abstractmethod
-    def nextState(self):
+    def next_state(self):
         return None
         
     """
     Return whether the state is finished running and should transition to the next state.
     """
     @abstractmethod
-    def isFinished(self):
+    def is_finished(self):
         return False
 
     """
     Return whether this state is the last state to run.
     """
     @abstractmethod
-    def isStopState(self):
+    def is_stop_state(self):
         return False

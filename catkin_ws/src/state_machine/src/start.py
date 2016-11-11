@@ -2,22 +2,22 @@ from state import State
 from search import Search
 
 class Start(State):
-    def __init__(self, currentInput):
-        self.currentInput = currentInput
-        self.canStart = False
+    def __init__(self, current_input):
+        self.current_input = current_input
+        self.can_start = False
     
     def run(self):
         # wait for start signal - modify canStart
-        self.canStart = True
+        self.can_start = True
     
-    def nextInput(self):
+    def next_input(self):
         return 2
 
-    def nextState(self):
+    def next_state(self):
         return Search
 
-    def isFinished(self):
-        return self.canStart
+    def is_finished(self):
+        return self.can_start
 
-    def isStopState(self):
+    def is_stop_state(self):
         return False
