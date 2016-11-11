@@ -26,14 +26,15 @@ class StateMachine():
         
     def run_state_machine(self):
         print "running"
-        currentState = Start(0)
-        while not currentState.isStopState():
-            print currentState.currentInput
-            while not currentState.isFinished():
-                currentState.run()
-            print currentState.nextInput()
-            currentState = currentState.nextState()(currentState.nextInput())
+        current_state = Start(0)
+        while not current_state.is_stop_state():
+            print current_state.current_input
+            while not current_state.is_finished():
+                current_state.run()
+            print current_state.next_input()
+            current_state = current_state.next_state()(current_state.next_input())
             # publish things here
+        print "done"
         
     
 def main():

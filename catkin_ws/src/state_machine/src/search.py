@@ -13,6 +13,7 @@ from apriltags.msg import AprilTagDetections
 import me212helper.helper as helper
 
 from state import State
+from stop import Stop
 
 class Search(State):
     def __init__(self, current_input):
@@ -24,7 +25,7 @@ class Search(State):
     def run(self):
         if self.current_input in self.tags_in_view:
             print "found target"
-            #self.found_target = True
+            self.found_target = True
     
     def next_input(self):
         return 0 # change later
@@ -43,5 +44,5 @@ class Search(State):
         ##
         del self.tags_in_view[:]
         for detection in data.detections:
-            print detection.pose.position.x, detection.pose.position.y, detection.pose.position.z
+            #print detection.pose.position.x, detection.pose.position.y, detection.pose.position.z
             self.tags_in_view.append(detection.id)

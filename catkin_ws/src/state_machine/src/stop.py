@@ -1,6 +1,6 @@
 from state import State
 
-class Start(State):
+class Stop(State):
     def __init__(self, current_input):
         self.current_input = current_input
         self.can_start = False
@@ -12,7 +12,7 @@ class Start(State):
         return 0
 
     def next_state(self):
-        return Stop
+        return None
 
     def is_finished(self):
         return self.can_start
