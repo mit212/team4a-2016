@@ -36,19 +36,26 @@ cx = msg.P[2]
 cy = msg.P[6]
 
 def main():
-    useHSV   = False 
-    useDepth = False
+    useHSV   = True 
+    useDepth = True
+    useDist = True
     if not useHSV:
         # Task 1
         
         # 1. initialize an OpenCV window
-        cv2.namedWindow("OpenCV_View")
+        #cv2.namedWindow("OpenCV_View")
         
         # 2. set callback func for mouse hover event
         #cv2.setMouseCallback("OpenCV_View", cvWindowMouseCallBackFunc)
         
         # 3. subscribe to image
         rospy.Subscriber('/camera/rgb/image_rect_color', Image, rosImageVizCallback)
+    elif useDist:
+        image_sub = message_filters.Subscriber("/camera/rgb/image_rect_color", Image)
+        depth_sub = message_filters.Subscriber("/camera/depth_registered/image", Image)
+
+        ts = message_filters.ApproximateTimeSynchronizer([image_sub, depth_sub], 10, 0.5)
+        ts.registerCallback(rosDistCallBack)
     else:
         if not useDepth:
             # Task 2 Detect object using HSV
@@ -74,11 +81,11 @@ def rosImageVizCallback(msg):
         print(e)
 
     # 2. visualize it in a cv window
-    cv2.startWindowThread()
+    #cv2.startWindowThread()
     cv2.imshow("OpenCV_View", cv_image)
     cv2.waitKey(3)
-    cv2.destroyAllWindows()
-    cv2.waitKey(1)
+    #cv2.destroyAllWindows()
+    #cv2.waitKey(1)
 
 # Task 1 callback for mouse event
 def cvWindowMouseCallBackFunc(event, xp, yp, flags, param):
@@ -120,10 +127,9 @@ def HSVObjectDetection(cv_image, toPrint = True):
     # define range of red color in HSV
     lower_red = np.array([170,50,50])
     upper_red = np.array([180,255,255])
-    
 
     # Threshold the HSV image to get only red colors
-    mask = cv2.inRange(hsv_image, lower, upper)   ##
+    mask = cv2.inRange(hsv_image, lower_red, upper_red)   ##
     mask_eroded         = cv2.erode(mask, None, iterations = 3)  ##
     mask_eroded_dilated = cv2.dilate(mask_eroded, None, iterations = 10)  ##
     
@@ -131,9 +137,56 @@ def HSVObjectDetection(cv_image, toPrint = True):
         print 'hsv', hsv_image[240][320] # the center point hsv
         
     showImageInCVWindow(cv_image, mask_eroded, mask_eroded_dilated)
-    contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+    _, contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
     return contours, mask_eroded_dilated
 
+# used to filter an image by distance
+def distanceObjectDetection(cv_depthimage, toPrint = True):
+    # range of acceptable distances
+    # closest: 6 in = 0.154
+    # middle obstacles: 25 in = 0.635
+    # farthest obstacles: 37 in = 0.94
+    lower_dist = 0.1
+    upper_dist = 1
+
+    # Threshold the image to only include objects within the specified distance
+    mask = cv2.inRange(cv_depthimage, lower_dist, upper_dist)
+    mask_eroded = cv2.erode(mask, None, iterations = 3)
+    mask_eroded_dilated = cv2.dilate(mask_eroded, None, iterations = 10)
+    
+    if toPrint:
+        print 'hsv', hsv_image[240][320] # the center point hsv
+        
+    showImageInCVWindow(cv_depthimage, mask_eroded, mask_eroded_dilated)
+    _, contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+    return contours, mask_eroded_dilated
+
+# callback to use distance filtering
+def rosDistCallBack(rgb_data, depth_data):
+    try:
+        cv_image = cv_bridge.imgmsg_to_cv2(rgb_data, "bgr8")
+        cv_depthimage = cv_bridge.imgmsg_to_cv2(depth_data, "32FC1")
+        cv_depthimage2 = np.array(cv_depthimage, dtype=np.float32)
+    except CvBridgeError as e:
+        print(e)
+            
+    contours, mask_image = distanceObjectDetection(cv_depthimage, toPrint = False)
+
+    for cnt in contours:
+        xp,yp,w,h = cv2.boundingRect(cnt)
+        
+        # Get depth value from depth image, need to make sure the value is in the normal range 0.1-10 meter
+        if not math.isnan(cv_depthimage2[int(yp)][int(xp)]) and cv_depthimage2[int(yp)][int(xp)] > 0.1 and cv_depthimage2[int(yp)][int(xp)] < 10.0:
+            zc = cv_depthimage2[int(yp)][int(xp)]
+            #print 'zc', zc
+        else:
+            continue
+            
+        centerx, centery = xp+w/2, yp+h/2
+        cv2.rectangle(cv_image,(xp,yp),(xp+w,yp+h),[0,255,255],2)
+        
+        showPyramid(centerx, centery, zc, w, h)
+        
 # Task 3 callback
 def rosRGBDCallBack(rgb_data, depth_data):
     try:
@@ -143,6 +196,7 @@ def rosRGBDCallBack(rgb_data, depth_data):
     except CvBridgeError as e:
         print(e)
 
+            
     contours, mask_image = HSVObjectDetection(cv_image, toPrint = False)
 
     for cnt in contours:
