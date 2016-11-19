@@ -25,16 +25,23 @@ class Drive(State):
         self.listener = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
         
-        rospy.sleep(0.5)
         self.apriltag_sub = rospy.Subscriber("/apriltags/detections", AprilTagDetections, self.apriltag_callback, queue_size = 1)
         self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
         
+        #self.thread = threading.Thread(target = self.drive)
+        #self.thread.start()
+        #rospy.spin()
+        
     def run(self):
         if self.current_input in self.tags_in_view:
+            #print "driving to apriltag", self.current_input
+            #print helper.invPoselist
             pose_tag_base = helper.transformPose(pose = helper.pose2poselist(self.detection_pose),  sourceFrame = '/camera', targetFrame = '/base_link', lr = self.listener)
-            pose_base_map = helper.transformPose(pose = helper.invPoselist(pose_tag_base), sourceFrame = '/apriltag0', targetFrame = '/map', lr = self.listener)
+            #print "pose_tag_base", pose_tag_base
+            pose_base_map = helper.transformPose(pose = helper.invPoselist(pose_tag_base), sourceFrame = '/apriltag', targetFrame = '/map', lr = self.listener)
             helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/base_link', parent_frame_id = '/map', npub = 1)
-            self.drive()
+        self.drive()
+        #rospy.spin()
     
     def next_input(self):
         return 0 # change later
@@ -51,11 +58,13 @@ class Drive(State):
     def apriltag_callback(self, data):
         del self.tags_in_view[:]
         for detection in data.detections:
+            #print detection.pose.position.x, detection.pose.position.y, detection.pose.position.z
             self.tags_in_view.append(detection.id)
             self.detection_pose = detection.pose
     
     # probably put this code in the run method, this just here for testing
     def drive(self):
+        #print "driving"
         ##
         target_pose2d = [0.25, 0, np.pi]
         
@@ -65,7 +74,8 @@ class Drive(State):
         ##
         arrived_position = False
         
-        if not rospy.is_shutdown() :
+        #change to if
+        while not rospy.is_shutdown() :
             
             ## 
             # 1. get robot pose
@@ -76,7 +86,7 @@ class Drive(State):
                 wv.desiredWV_R = 0  # right, left
                 wv.desiredWV_L = 0
                 self.velcmd_pub.publish(wv)  
-                return
+                continue
             
             robot_position2d = robot_pose3d[0:2]
             target_position2d = target_pose2d[0:2]
