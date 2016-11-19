@@ -28,7 +28,9 @@ class Drive(State):
         self.apriltag_sub = rospy.Subscriber("/apriltags/detections", AprilTagDetections, self.apriltag_callback, queue_size = 1)
         self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
         
-        self.thread = threading.Thread(target = self.drive)
+        #self.thread = threading.Thread(target = self.drive)
+        #self.thread.start()
+        #rospy.spin()
         
     def run(self):
         if self.current_input in self.tags_in_view:
@@ -38,6 +40,8 @@ class Drive(State):
             #print "pose_tag_base", pose_tag_base
             pose_base_map = helper.transformPose(pose = helper.invPoselist(pose_tag_base), sourceFrame = '/apriltag', targetFrame = '/map', lr = self.listener)
             helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/base_link', parent_frame_id = '/map', npub = 1)
+        self.drive()
+        #rospy.spin()
     
     def next_input(self):
         return 0 # change later
@@ -60,7 +64,7 @@ class Drive(State):
     
     # probably put this code in the run method, this just here for testing
     def drive(self):
-        print "driving"
+        #print "driving"
         ##
         target_pose2d = [0.25, 0, np.pi]
         
@@ -70,11 +74,12 @@ class Drive(State):
         ##
         arrived_position = False
         
+        #change to if
         while not rospy.is_shutdown() :
             
             ## 
             # 1. get robot pose
-            robot_pose3d = helper.lookupTransformList('/map', '/base_link', self.listener)
+            robot_pose3d = helper.lookupTransform(self.listener, '/map', '/base_link')
             
             if robot_pose3d is None:
                 print '1. Tag not in view, Stop'
