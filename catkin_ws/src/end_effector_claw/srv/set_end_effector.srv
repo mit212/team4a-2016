@@ -1,0 +1,8 @@
+# Set position for end effector linear position and rotational position
+
+float64 eelp
+float64 eerp
+---
+float64 echo_eelp
+float64 echo_eerp
+

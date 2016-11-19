@@ -1,0 +1,13 @@
+joint1_controller:
+    controller:
+        package: dynamixel_controllers
+        module: joint_torque_controller
+        type: JointTorqueController
+    joint_name: joint1
+    joint_speed: 2
+    motor:
+        id: 21
+        init: 2047
+        min: 1536
+        max: 3070
+
