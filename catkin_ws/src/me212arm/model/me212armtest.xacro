@@ -10,7 +10,7 @@
 <xacro:property name="arm_w" value="0.01"/>
 <xacro:property name="arm_h" value="0.01"/>
 
-<xacro:property name="mount_l" value="0.050"/>
+<xacro:property name="mount_l" value="0.50"/>
 <xacro:property name="mount_w" value="0.061"/>
 <xacro:property name="mount_h" value="0.07"/>
 
@@ -39,7 +39,7 @@
 			<geometry>
 				<box size="${arm_l} ${arm_w} ${arm_h}"/>
 			</geometry>
-			<origin rpy="0 0 0" xyz="0 0 0"/>
+			<origin rpy="0 0 0" xyz="${(arm_l-base_l)/2} "/>
 		</visual>
 	</link>
 	
@@ -48,7 +48,7 @@
 			<geometry>
 				<box size="${mount_l} ${mount_w} ${mount_h}"/>
 			</geometry>
-			<origin xyz="0 0 0"/>
+			<origin xyz=""/>
 		</visual>
 	</link>
 	
@@ -57,7 +57,7 @@
 			<geometry>
 				<box size="${end_effector_1_l} ${end_effector_1_w} ${end_effector_1_h}"/>
 			</geometry>
-			<origin xyz="0 0 0"/>
+			<origin xyz=""/>
 		</visual>
 	</link>
 
@@ -66,15 +66,15 @@
 			<geometry>
 				<box size="${end_effector_2_l} ${end_effector_2_w} ${end_effector_2_h}"/>
 			</geometry>
-			<origin xyz="0 0 0"/>
+			<origin xyz=""/>
 		</visual>
 	</link>
 	
 	<joint name ="base_to_arm" type="prismatic">
 		<parent link="base"/>
 		<child link="arm"/>
-		<axis xyz="1 0 0"/>
-		<limit effort="1" lower="0" upper="0.16" velocity="1"/>
+		<axis xyz="0 1 0"/>
+		<limit effort="1" lower="-0.19" upper="0" velocity="1"/>
 		<origin xyz="${((base_l-arm_l)/2) + 0.028} ${-(base_w+arm_w)/2} ${(arm_h-base_h)/2}"/>
 	</joint>
 	
@@ -87,9 +87,9 @@
 	<joint name ="mount_to_end_effector_1" type="revolute">
 		<parent link="mount"/>
 		<child link="end_effector_1"/>
-		<axis xyz="1 0 0"/>
-		<limit effort="1" lower="-1.58" upper="0" velocity="1"/>
-		<origin xyz="${(mount_l+end_effector_1_l)/2} 0.012 -0.008"/>   
+		<axis xyz="0 1 0"/>
+		<limit effort="1" lower="0" upper="1.58" velocity="1"/>
+		<origin xyz="${(mount_l+end_effector_1_l)/2} 0.012 0.008"/>   
 	</joint>	
 	
 	<joint name ="end_effector_1_to_end_effector_2" type="fixed">
