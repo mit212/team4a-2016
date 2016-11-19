@@ -25,12 +25,12 @@
 <xacro:property name="pi" value="3.141592654"/>
 
 
-	<link name="base">   <!-- need to change x to y, y to -x -->
+	<link name="base">
 		<visual>
 			<geometry>
 				<box size="${base_l} ${base_w} ${base_h}"/>
 			</geometry>
-			<origin rpy="0 0 0" xyz="0 0 0"/> <!-- CHANGE LATER -->
+			<origin rpy="0 0 0" xyz="0 0 0"/>
 		</visual>
 	</link>
 	
@@ -39,7 +39,7 @@
 			<geometry>
 				<box size="${arm_l} ${arm_w} ${arm_h}"/>
 			</geometry>
-			<origin rpy="0 0 0" xyz="${(arm_length-base_length)/2} "/>
+			<origin rpy="0 0 0" xyz="${(arm_l-base_l)/2} "/>
 		</visual>
 	</link>
 	
