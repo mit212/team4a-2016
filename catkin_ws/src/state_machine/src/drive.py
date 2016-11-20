@@ -18,7 +18,11 @@ from stop import Stop
 class Drive(State):
     def __init__(self, current_input):
         self.current_input = current_input
+
         self.arrived = False
+        self.arrived_position = False
+        self.target_pose2d = [0.25, 0, np.pi]
+
         self.tags_in_view = []
         self.detection_pose = None
         
@@ -56,18 +60,10 @@ class Drive(State):
     
     # probably put this code in the run method, this just here for testing
     def drive(self):
-        ##
-        target_pose2d = [0.25, 0, np.pi]
-        
-        ##
         wv = WheelVelCmd()
-        
-        ##
-        arrived_position = False
         
         if not rospy.is_shutdown() :
             
-            ## 
             # 1. get robot pose
             robot_pose3d = helper.lookupTransform(self.listener, '/map', '/base_link')
             
@@ -79,11 +75,13 @@ class Drive(State):
                 return
             
             robot_position2d = robot_pose3d[0:2]
-            target_position2d = target_pose2d[0:2]
+            target_position2d = self.target_pose2d[0:2]
             
             robot_yaw = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]
             robot_pose2d = robot_position2d + [robot_yaw]
             
+            print robot_position2d
+
             # 2. navigation policy
             # 2.1 if       in the target, 
             # 2.2 else if  close to target position, turn to the target orientation
@@ -94,20 +92,24 @@ class Drive(State):
             robot_heading_vec = np.array([np.cos(robot_yaw), np.sin(robot_yaw)])
             heading_err_cross = helper.cross2d( robot_heading_vec, pos_delta / np.linalg.norm(pos_delta) )
             
+            '''print 'pos_delta', pos_delta
+            print 'robot_heading_vec', robot_heading_vec
+            print 'heading_err_cross', heading_err_cross'''
+
             # print 'robot_position2d', robot_position2d, 'target_position2d', target_position2d
             # print 'pos_delta', pos_delta
             # print 'robot_yaw', robot_yaw
-            # print 'norm delta', np.linalg.norm( pos_delta ), 'diffrad', diffrad(robot_yaw, target_pose2d[2])
+            # print 'norm delta', np.linalg.norm( pos_delta ), 'diffrad', diffrad(robot_yaw, self.target_pose2d[2])
             # print 'heading_err_cross', heading_err_cross
             
-            if self.arrived or (np.linalg.norm( pos_delta ) < 0.08 and np.fabs(diffrad(robot_yaw, target_pose2d[2]))<0.05) :
+            if self.arrived or (np.linalg.norm( pos_delta ) < 0.08 and np.fabs(diffrad(robot_yaw, self.target_pose2d[2]))<0.05) :
                 print 'Case 2.1  Stop'
                 wv.desiredWV_R = 0  
                 wv.desiredWV_L = 0
                 self.arrived = True
             elif np.linalg.norm( pos_delta ) < 0.08:
-                arrived_position = True
-                if diffrad(robot_yaw, target_pose2d[2]) > 0:
+                self.arrived_position = True
+                if diffrad(robot_yaw, self.target_pose2d[2]) > 0:
                     print 'Case 2.2.1  Turn right slowly'      
                     wv.desiredWV_R = -0.05 
                     wv.desiredWV_L = 0.05
@@ -116,7 +118,7 @@ class Drive(State):
                     wv.desiredWV_R = 0.05  
                     wv.desiredWV_L = -0.05
                     
-            elif arrived_position or np.fabs( heading_err_cross ) < 0.2:
+            elif self.arrived_position or np.fabs( heading_err_cross ) < 0.2:
                 print 'Case 2.3  Straight forward'  
                 wv.desiredWV_R = 0.1
                 wv.desiredWV_L = 0.1
@@ -133,4 +135,3 @@ class Drive(State):
             self.velcmd_pub.publish(wv)  
             
             rospy.sleep(0.01)
-
