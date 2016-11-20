@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>end_effector_claw</name>
+  <name>end_effector</name>
   <version>0.0.0</version>
   <description>The end effector - extension and rotation</description>
 

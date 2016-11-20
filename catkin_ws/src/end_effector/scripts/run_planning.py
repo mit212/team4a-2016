@@ -14,15 +14,38 @@ rospy.init_node("run_planning")
 #exec_joint_pub = rospy.Publisher('/virtual_joint_states', sensor_msgs.msg.JointState, queue_size=10)
 exec_joint1_pub = rospy.Publisher('/joint1_controller/command', std_msgs.msg.Float64, queue_size=1)
 
-use_real_arm = rospy.get_param('/real_arm', False)
+use_real_arm = rospy.get_param('/real_arm', True)
 
 if __name__=="__main__":
 
-    robotjoints = rospy.wait_for_message('/joint_states', sensor_msgs.msg.JointState)
-    print robotjoints.position
+    #robotjoints = rospy.wait_for_message('/joint_states', sensor_msgs.msg.JointState)
+    #print robotjoints.position
 
-    if use_real_arm:
-                exec_joint1_pub.publish(std_msgs.msg.Float64(1.0)
+    #if use_real_arm:
+    run = True
+    count = 0
+    while not rospy.is_shutdown():
+        if count >= 3:
+            run = False
+        
+        if run:
+            exec_joint1_pub.publish(std_msgs.msg.Float64(0.0))
+            rospy.sleep(2)
+            exec_joint1_pub.publish(std_msgs.msg.Float64(1.0))
+            rospy.sleep(2)
+            exec_joint1_pub.publish(std_msgs.msg.Float64(2.0))
+            rospy.sleep(2)
+            exec_joint1_pub.publish(std_msgs.msg.Float64(3.0))
+            rospy.sleep(2)
+            exec_joint1_pub.publish(std_msgs.msg.Float64(-3.0))
+            rospy.sleep(2)
+        else:
+            exec_joint1_pub.publish(std_msgs.msg.Float64(0))
+        
+        count +=1
+
+
+
 
     #radius = 0.05          # (meter)
     #center = [0.2, 0.15]  # (x,z) meter
@@ -45,5 +68,4 @@ if __name__=="__main__":
     #            exec_joint_pub.publish(js)
     #        q0 = q_sol
 
-        rospy.sleep(0.3)
-
+    rospy.sleep(0.3)

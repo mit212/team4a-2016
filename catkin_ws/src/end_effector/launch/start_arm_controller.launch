@@ -1,14 +1,14 @@
 <?xml version="1.0" ?>
 <launch>
     <!-- Start joint controller -->
-    <rosparam file="$(find me212arm)/config/joint1.yaml" command="load"/>
+    <rosparam file="$(find end_effector)/config/joint1.yaml" command="load"/>
     <node name="joint1_controller_spawner" pkg="dynamixel_controllers" type="controller_spawner.py"
           args="--manager=dxl_manager
                 --port arm_port
                 joint1_controller"
           output="screen"/>
           
-    <rosparam file="$(find me212arm)/config/joint2.yaml" command="load"/>
+    <rosparam file="$(find end_effector)/config/joint2.yaml" command="load"/>
     <node name="joint2_controller_spawner" pkg="dynamixel_controllers" type="controller_spawner.py"
           args="--manager=dxl_manager
                 --port arm_port
@@ -18,7 +18,7 @@
     
 
 <!--
-    <node name="joint_state_publisher" pkg="me212arm" type="joint_state_publisher.py" required="true" output="screen"/>
+    <node name="joint_state_publisher" pkg="end_effector" type="joint_state_publisher.py" required="true" output="screen"/>
 -->
 
 </launch>
