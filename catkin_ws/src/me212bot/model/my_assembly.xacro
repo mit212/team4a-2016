@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+    
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="my_assembly">
+
+    <xacro:include filename="$(find me212arm)/model/my_robot.xacro" />
+
+    <xacro:include filename="$(find me212base)/model/me212base.xacro" />
+
+
+    <joint name="joint_base_arm" type="fixed">
+        <parent link="robot_base"/>
+        <child link="base"/>
+        <origin xyz="0.05 0.05 0.30" />
+    </joint>
+
+</robot>
