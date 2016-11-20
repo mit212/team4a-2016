@@ -4,68 +4,70 @@
 # Peter Yu Oct 2016
 import rospy
 import planner
-import std_msgs.msg, sensor_msgs.msg
+import threading
+import std_msgs.msg, sensor_msgs.msg, dynamixel_msgs.msg
 #import numpy as np
 
-rospy.init_node("run_planning")
+class RunPlanning():
+    def __init__(self):
+        self.exec_joint1_pub = rospy.Publisher('/joint1_controller/command', std_msgs.msg.Float64, queue_size=1)
+        self.robotjoints = rospy.Subscriber('/joint1_controller/state', dynamixel_msgs.msg.JointState, self.end_effector_callback, queue_size=1)
+        print "this is robot joints:", self.robotjoints 
 
-#exec_joint1_pub = rospy.Publisher('/joint1_controller/command', std_msgs.msg.Float64, queue_size=1)
-#exec_joint2_pub = rospy.Publisher('/joint2_controller/command', std_msgs.msg.Float64, queue_size=1)
-#exec_joint_pub = rospy.Publisher('/virtual_joint_states', sensor_msgs.msg.JointState, queue_size=10)
-exec_joint1_pub = rospy.Publisher('/joint1_controller/command', std_msgs.msg.Float64, queue_size=1)
+        self.position = 0
+        self.velocity = 0
 
-use_real_arm = rospy.get_param('/real_arm', True)
+        self.thread = threading.Thread(target = self.loop)
+        self.thread.start()
+        rospy.sleep(1)
+        
+    def loop(self):
+        #if use_real_arm:
+        run = True
+        count = 0
+        while not rospy.is_shutdown():
+            print count
+            if count >= 3:
+                run = False
+            
+            if run:
+                self.exec_joint1_pub.publish(std_msgs.msg.Float64(0.0))
+                print "position:", self.position, "velocity:", self.velocity
+                rospy.sleep(2)
+                self.exec_joint1_pub.publish(std_msgs.msg.Float64(1.0))
+                print "position:", self.position, "velocity:", self.velocity
+                rospy.sleep(2)
+                self.exec_joint1_pub.publish(std_msgs.msg.Float64(2.0))
+                print "position:", self.position, "velocity:", self.velocity
+                rospy.sleep(2)
+                self.exec_joint1_pub.publish(std_msgs.msg.Float64(3.0))
+                print "position:", self.position, "velocity:", self.velocity
+                rospy.sleep(2)
+                self.exec_joint1_pub.publish(std_msgs.msg.Float64(-3.0))
+                print "position:", self.position, "velocity:", self.velocity
+                rospy.sleep(2)
+            else:
+                self.exec_joint1_pub.publish(std_msgs.msg.Float64(0))
+            
+            count +=1
+
+        rospy.sleep(0.3)
+    
+    def end_effector_callback(self, data):
+        self.velocity = data.velocity
+        self.position = data.current_pos
+        #print "something", self.velocity
+
+def main():
+    rospy.init_node("run_planning")
+    run_planning = RunPlanning()
+    rospy.spin()
 
 if __name__=="__main__":
+    main()
 
-    #robotjoints = rospy.wait_for_message('/joint_states', sensor_msgs.msg.JointState)
-    #print robotjoints.position
-
-    #if use_real_arm:
-    run = True
-    count = 0
-    while not rospy.is_shutdown():
-        if count >= 3:
-            run = False
-        
-        if run:
-            exec_joint1_pub.publish(std_msgs.msg.Float64(0.0))
-            rospy.sleep(2)
-            exec_joint1_pub.publish(std_msgs.msg.Float64(1.0))
-            rospy.sleep(2)
-            exec_joint1_pub.publish(std_msgs.msg.Float64(2.0))
-            rospy.sleep(2)
-            exec_joint1_pub.publish(std_msgs.msg.Float64(3.0))
-            rospy.sleep(2)
-            exec_joint1_pub.publish(std_msgs.msg.Float64(-3.0))
-            rospy.sleep(2)
-        else:
-            exec_joint1_pub.publish(std_msgs.msg.Float64(0))
-        
-        count +=1
-
-
-
-
-    #radius = 0.05          # (meter)
-    #center = [0.2, 0.15]  # (x,z) meter
     
-    #robotjoints = rospy.wait_for_message('/joint_states', sensor_msgs.msg.JointState)
-    #q0 = robotjoints.position
-    
-    #for theta in np.linspace(0, 4*np.pi):
-    #    target_xz = [center[0] + radius * np.cos(theta) , center[1] + radius * np.sin(theta) ]
-    #    q_sol = planner.ik(target_xz, q0)
-    #    if q_sol is None:
-    #        print 'no ik solution'
-    #    else:
-    #        print '(q_1,q_2)=', q_sol
-    #        if use_real_arm:
-    #            exec_joint1_pub.publish(std_msgs.msg.Float64(q_sol[0]))
-    #            exec_joint2_pub.publish(std_msgs.msg.Float64(q_sol[1]))
-    #        else:
-    #            js = sensor_msgs.msg.JointState(name=['joint1', 'joint2'], position = q_sol)
-    #            exec_joint_pub.publish(js)
-    #        q0 = q_sol
 
-    rospy.sleep(0.3)
+
+
+

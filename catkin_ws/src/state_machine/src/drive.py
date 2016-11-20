@@ -49,7 +49,7 @@ class Drive(State):
         return self.arrived
 
     def is_stop_state(self):
-        return False
+        return Falseself.apriltag_callback
         
     def apriltag_callback(self, data):
         del self.tags_in_view[:]
