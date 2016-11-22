@@ -15,6 +15,7 @@ class RunPlanning():
 
         self.zero_pos = 0
         self.position = 0
+        self.load = 0
 
         self.thread = threading.Thread(target = self.loop)
         self.thread.start()
@@ -54,8 +55,8 @@ class RunPlanning():
                 #     print "position:", self.position, "abs pos:", self.current_pos
                 # rospy.sleep(2)
 
-                self.run_distance(10, 10.0)
-                self.run_distance(10, -2.0)
+                self.run_distance(15, 20.0)
+                self.run_distance(15, -20.0)
                 self.stop()
                 run = False
 
@@ -76,22 +77,47 @@ class RunPlanning():
         self.exec_joint1_pub.publish(std_msgs.msg.Float64(0))
 
     def run_distance(self, distance, speed):
+        #returns 0 if success, 1 if general error, >1 errorID
+
+        #max distance is 15 to traverse the length of the rack gear
+        #make sure that 0 <= distance <= 15
+
+        #speed is a float
+
+        if not (distance >=0 and distance <= 15):
+            print "distance argument invalid"
+            while 1:
+                pass
+            return 1
+
         last_pos = self.position
+        last_load = self.load
+        load_inc = last_load
         elapsed_distance = 0
         self.exec_joint1_pub.publish(std_msgs.msg.Float64(speed))
         
         while elapsed_distance < distance:
             increment = abs(self.position-last_pos)
+            load_inc = abs(self.load - last_load)
             print "                         elapsed distance:", elapsed_distance
-            print "check increment:", increment
+            #print "check increment:", increment
+            # print "check load:", self.load, "load inc:", load_inc
+            # if load_inc > 0.3:
+            #     print "bad"
+            #     self.stop()
+            #     while 1:
+            #         pass
+
             if increment < 3.0:
                 elapsed_distance += increment
             last_pos = self.position
+            last_load = self.load
             rospy.sleep(0.01)
         
         self.stop()
         
         print "run_distance", distance, "complete" 
+        return 0
 
 def main():
     rospy.init_node("run_planning")
