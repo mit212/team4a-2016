@@ -21,8 +21,12 @@ unsigned long       prevTime = 0;
 boolean usePathPlanner = true;
 boolean toggleState = false;
 
-const int wrist_up = 100;
-const int wrist_down = 1650;
+float wrist_state = 0; 
+
+const int wrist_up = 0;
+const int wrist_down = 1;
+const int wrist_up_pos = 100;
+const int wrist_down_pos = 1650;
 
 void setup() {
     Serial.begin(115200);       // initialize Serial Communication
@@ -54,23 +58,25 @@ void loop() {
         wheelVelCtrl.doPIControl("Left",  serialComm.desiredWV_L, encoder.v_L); 
         wheelVelCtrl.doPIControl("Right", serialComm.desiredWV_R, encoder.v_R);
 
+        //update wrist_state
+        wrist_state = serialComm.desiredWrist;
+        
+        //move the wrist
+        if (wrist_state == wrist_down)
+        {
+           servoWrist.write(wrist_down_pos);
+        }
+        else
+        {
+          servoWrist.write(wrist_up_pos);
+        }
+        Serial.print("wrist command: ");
+        Serial.print(serialComm.desiredWrist);
+        Serial.print("\n");
+
         prevTime = currentTime; // update time
     }
-    if(toggleState == true)
-    {
-      servoWrist.write(wrist_up);
-    }
-    else
-    {
-      servoWrist.write(wrist_down);
-    }
 }
-
-/*
-servoWrist.write(100);
-    delay(1000);
-    servoWrist.write(1650);
-    delay(2000);*/
 
 
 

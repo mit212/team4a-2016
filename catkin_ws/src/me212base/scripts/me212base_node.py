@@ -34,33 +34,34 @@ class Arduino():
         
 
     def cmdvel(self, msg):  
-        self.comm.write("%f,%f\n" % (msg.desiredWV_R, msg.desiredWV_L))
+        self.comm.write("%f,%f,%f,\n" % (msg.desiredWV_R, msg.desiredWV_L, msg.desiredWrist))
     
     # loop() is for reading odometry from Arduino and publish to rostopic.
     def loop(self):
         while not rospy.is_shutdown():
             # 1. get a line of string that represent current odometry from serial
             serialData = self.comm.readline()
+            print serialData;
             
-            # 2. parse the string e.g. "0.1,0.2,0.1" to doubles
-            splitData = serialData.split(',');
+            # # 2. parse the string e.g. "0.1,0.2,0.1" to doubles
+            # splitData = serialData.split(',');
             
-            try:
-                x     = float(splitData[0]);
-                y     = float(splitData[1]);
-                theta = float(splitData[2]);
-                hz    = 1.0 / (rospy.Time.now().to_sec() - self.prevtime.to_sec())
+            # try:
+            #     x     = float(splitData[0]);
+            #     y     = float(splitData[1]);
+            #     theta = float(splitData[2]);
+            #     hz    = 1.0 / (rospy.Time.now().to_sec() - self.prevtime.to_sec())
                 
-                cnt += 1
-                print 'x=', x, ' y=', y, ' theta =', theta, ' hz =', hz; 
+            #     cnt += 1
+            #     print 'x=', x, ' y=', y, ' theta =', theta, ' hz =', hz; 
                     
-                self.prevtime = rospy.Time.now()
+            #     self.prevtime = rospy.Time.now()
                 
-            except:
-                # print out msg if there is an error parsing a serial msg
-                print 'Cannot parse', splitData
-                ex_type, ex, tb = sys.exc_info()
-                traceback.print_tb(tb)
+            # except:
+            #     # print out msg if there is an error parsing a serial msg
+            #     print 'Cannot parse', splitData
+            #     ex_type, ex, tb = sys.exc_info()
+            #     traceback.print_tb(tb)
 
 
 def main():

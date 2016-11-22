@@ -6,12 +6,16 @@ import rospy
 import planner
 import threading
 import std_msgs.msg, sensor_msgs.msg, dynamixel_msgs.msg
+from me212base.msg import WheelVelCmd
 #import numpy as np
 
 class RunPlanning():
     def __init__(self):
+
         self.exec_joint1_pub = rospy.Publisher('/joint1_controller/command', std_msgs.msg.Float64, queue_size=1)
         self.robotjoints = rospy.Subscriber('/joint1_controller/state', dynamixel_msgs.msg.JointState, self.end_effector_callback, queue_size=1)
+        self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
+
 
         self.zero_pos = 0
         self.position = 0
@@ -28,6 +32,11 @@ class RunPlanning():
 
         run = True
         count = 0
+
+        wv = WheelVelCmd()
+        WRIST_UP = 0
+        WRIST_DOWN = 1
+
         while not rospy.is_shutdown():
             #print count
             if count >= 3:
@@ -54,10 +63,15 @@ class RunPlanning():
                 #     self.exec_joint1_pub.publish(std_msgs.msg.Float64(-3.0))
                 #     print "position:", self.position, "abs pos:", self.current_pos
                 # rospy.sleep(2)
-
+                self.move_wrist(WRIST_UP)   
                 self.run_distance(15, 20.0)
-                self.run_distance(15, -20.0)
                 self.stop()
+
+                self.move_wrist(WRIST_DOWN)
+                self.run_distance(15, -20.0)
+                self.move_wrist(WRIST_UP)
+                self.stop()
+
                 run = False
 
             else:
@@ -117,6 +131,15 @@ class RunPlanning():
         self.stop()
         
         print "run_distance", distance, "complete" 
+        return 0
+
+    def move_wrist(self, position):
+        wv = WheelVelCmd()
+        wv.desiredWV_R = 0  # don't move...
+        wv.desiredWV_L = 0
+        wv.desiredWrist = position
+        self.velcmd_pub.publish(wv)  
+
         return 0
 
 def main():
