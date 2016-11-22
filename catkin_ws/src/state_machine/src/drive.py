@@ -24,7 +24,7 @@ class Drive(State):
         self.target_pose2d = [0.25, 0, np.pi]
 
         self.tags_in_view = []
-        self.detection_pose = None
+        self.detection_poses = {}
         
         self.listener = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
@@ -35,9 +35,12 @@ class Drive(State):
         
     def run(self):
         if self.current_input in self.tags_in_view:
-            pose_tag_base = helper.transformPose(pose = helper.pose2poselist(self.detection_pose),  sourceFrame = '/camera', targetFrame = '/base_link', lr = self.listener)
-            pose_base_map = helper.transformPose(pose = helper.invPoselist(pose_tag_base), sourceFrame = '/apriltag0', targetFrame = '/map', lr = self.listener)
-            helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/base_link', parent_frame_id = '/map', npub = 1)
+            poselist_tag_cam = helper.pose2poselist(self.detection_poses[self.current_input])
+            pose_tag_base = helper.transformPose(pose = poselist_tag_cam,  sourceFrame = '/camera', targetFrame = '/robot_base', lr = self.listener)
+            print pose_tag_base
+            poselist_base_tag = helper.invPoselist(pose_tag_base)
+            pose_base_map = helper.transformPose(pose = poselist_base_tag, sourceFrame = '/apriltag0', targetFrame = '/map', lr = self.listener)
+            helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/robot_base', parent_frame_id = '/map', npub = 1)
             self.drive()
     
     def next_input(self):
@@ -53,19 +56,22 @@ class Drive(State):
         return False
         
     def apriltag_callback(self, data):
+        print "here"
         del self.tags_in_view[:]
         for detection in data.detections:
             self.tags_in_view.append(detection.id)
-            self.detection_pose = detection.pose
+            self.detection_poses[detection.id] = detection.pose
     
     # probably put this code in the run method, this just here for testing
     def drive(self):
         wv = WheelVelCmd()
         
+        #rate = rospy.Rate(100) # 100hz
+
         if not rospy.is_shutdown() :
             
             # 1. get robot pose
-            robot_pose3d = helper.lookupTransform(self.listener, '/map', '/base_link')
+            robot_pose3d = helper.lookupTransform(self.listener, '/map', '/robot_base')
             
             if robot_pose3d is None:
                 print '1. Tag not in view, Stop'
@@ -80,7 +86,7 @@ class Drive(State):
             robot_yaw = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]
             robot_pose2d = robot_position2d + [robot_yaw]
             
-            print robot_position2d
+            print robot_yaw
 
             # 2. navigation policy
             # 2.1 if       in the target, 
@@ -134,4 +140,5 @@ class Drive(State):
                     
             self.velcmd_pub.publish(wv)  
             
-            rospy.sleep(0.01)
+            rospy.sleep(2)
+            #rate.sleep()
