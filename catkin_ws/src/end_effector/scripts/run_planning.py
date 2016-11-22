@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
-# 2.12 Lab 5 trajectory planning
-# Peter Yu Oct 2016
+# 2.12 Catch Testing
+# Jesse Chang
+
 import rospy
 import planner
 import threading
@@ -11,15 +12,15 @@ from me212base.msg import WheelVelCmd
 
 class RunPlanning():
     def __init__(self):
+        self.zero_pos = 0
+        self.position = 0
+        self.current_pos = 0
+        self.load = 0
 
         self.exec_joint1_pub = rospy.Publisher('/joint1_controller/command', std_msgs.msg.Float64, queue_size=1)
         self.robotjoints = rospy.Subscriber('/joint1_controller/state', dynamixel_msgs.msg.JointState, self.end_effector_callback, queue_size=1)
         self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
-
-
-        self.zero_pos = 0
-        self.position = 0
-        self.load = 0
+        rospy.sleep(1)
 
         self.thread = threading.Thread(target = self.loop)
         self.thread.start()
@@ -28,7 +29,7 @@ class RunPlanning():
     def loop(self):
         rospy.sleep(0.2)
         self.zero_pos = self.position
-        self.current_pos = 0
+
 
         run = True
         count = 0
@@ -37,45 +38,23 @@ class RunPlanning():
         WRIST_UP = 0
         WRIST_DOWN = 1
 
-        while not rospy.is_shutdown():
+        while (not rospy.is_shutdown()) and run:
             #print count
             if count >= 3:
                 run = False
             
             if run:
-                # self.exec_joint1_pub.publish(std_msgs.msg.Float64(0.0))
-                # print "position:", self.position, "velocity:", self.velocity
-                # rospy.sleep(2)
-                # self.exec_joint1_pub.publish(std_msgs.msg.Float64(1.0))
-                # print "position:", self.position, "velocity:", self.velocity
-                # rospy.sleep(2)
-                # self.exec_joint1_pub.publish(std_msgs.msg.Float64(2.0))
-                # print "position:", self.position, "velocity:", self.velocity
-                # rospy.sleep(2)
-                # while abs(self.current_pos) < 3:
-                #     self.exec_joint1_pub.publish(std_msgs.msg.Float64(3.0))
-                #     print "position:", self.position, "abs pos:", self.current_pos
-                # print "checkpoint"
-                # self.stop()
-                # while True:
-                #     pass
-                # while self.current_pos > -3:
-                #     self.exec_joint1_pub.publish(std_msgs.msg.Float64(-3.0))
-                #     print "position:", self.position, "abs pos:", self.current_pos
-                # rospy.sleep(2)
                 self.move_wrist(WRIST_UP)   
-                self.run_distance(15, 20.0)
+                self.run_distance(5, 20.0)
                 self.stop()
 
                 self.move_wrist(WRIST_DOWN)
-                self.run_distance(15, -20.0)
+                self.run_distance(5, -20.0)
                 self.move_wrist(WRIST_UP)
                 self.stop()
 
                 run = False
 
-            else:
-                self.exec_joint1_pub.publish(std_msgs.msg.Float64(0))
             
             count +=1
 
@@ -85,7 +64,7 @@ class RunPlanning():
         self.velocity = data.velocity
         self.position = data.current_pos
         self.load = data.load
-        self.current_pos = self.position-self.zero_pos
+        #self.current_pos = self.position-self.zero_pos
         #print "something", self.velocity
     def stop(self):
         self.exec_joint1_pub.publish(std_msgs.msg.Float64(0))
@@ -111,6 +90,7 @@ class RunPlanning():
         self.exec_joint1_pub.publish(std_msgs.msg.Float64(speed))
         
         while elapsed_distance < distance:
+            self.exec_joint1_pub.publish(std_msgs.msg.Float64(speed))
             increment = abs(self.position-last_pos)
             load_inc = abs(self.load - last_load)
             print "                         elapsed distance:", elapsed_distance

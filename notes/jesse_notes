@@ -1,7 +1,7 @@
 This document contains notes for future reference - 
 
 Dynamixels-
-	In order to set the dynamixels to wheel mode (continuous rotation), one must run the python script set_servo_config.py file in catkin_ws/src/dynamixel_motor/dynamixel_driver/scripts with the following flags: --baud=400000 --ccw-angle-limit=0 --ccw-angle-limit=0 and the motor_id. This should only need to be run once, per motor id.
+	In order to set the dynamixels to wheel mode (continuous rotation), one must run the python script set_servo_config.py file in (use ./)catkin_ws/src/dynamixel_motor/dynamixel_driver/scripts with the following flags: --baud=400000 --ccw-angle-limit=0 --ccw-angle-limit=0 and the motor_id. This should only need to be run once, per motor id.
 	
 	To publish a single value to a node, we use: rostopic pub /joint1_controller/command std_msgs/Float64 -- 1.0, where joint1_controller is the name of the node and command is the topic. 
 
