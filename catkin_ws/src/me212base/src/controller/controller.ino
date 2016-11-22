@@ -6,6 +6,11 @@
 
 #include "Arduino.h"
 #include "helper.h"
+#include "ServoTimer2.h"
+
+#define servoWristPin  2
+#define togglePin      3
+ServoTimer2 servoWrist;
 
 EncoderMeasurement  encoder(26);      // encoder handler class, set the motor type 53 or 26 here
 RobotPose           robotPose;        // robot position and orientation calculation class
@@ -14,17 +19,24 @@ SerialComm          serialComm;       // serial communication class
 unsigned long       prevTime = 0;
 
 boolean usePathPlanner = true;
+boolean toggleState = false;
+
+const int wrist_up = 100;
+const int wrist_down = 1650;
 
 void setup() {
     Serial.begin(115200);       // initialize Serial Communication
     encoder.init();  // connect with encoder
     wheelVelCtrl.init();        // connect with motor
+    servoWrist.attach(servoWristPin);
+    pinMode(togglePin, INPUT);
     delay(1e3);                 // delay 1000 ms so the robot doesn't drive off without you
 }
 
 void loop() {
     //timed loop implementation
     unsigned long currentTime = micros();
+    toggleState = digitalRead(togglePin);
     
     if (currentTime - prevTime >= PERIOD_MICROS) {
       
@@ -43,8 +55,22 @@ void loop() {
         wheelVelCtrl.doPIControl("Right", serialComm.desiredWV_R, encoder.v_R);
 
         prevTime = currentTime; // update time
-    } 
+    }
+    if(toggleState == true)
+    {
+      servoWrist.write(wrist_up);
+    }
+    else
+    {
+      servoWrist.write(wrist_down);
+    }
 }
+
+/*
+servoWrist.write(100);
+    delay(1000);
+    servoWrist.write(1650);
+    delay(2000);*/
 
 
 
