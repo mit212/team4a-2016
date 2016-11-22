@@ -82,7 +82,7 @@ class RunPlanning():
         #max distance is 15 to traverse the length of the rack gear
         #make sure that 0 <= distance <= 15
 
-        #speed is a float
+        #speed is a float, positive for CCW, negative for CW, 20 is max...
 
         if not (distance >=0 and distance <= 15):
             print "distance argument invalid"
