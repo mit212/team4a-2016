@@ -153,13 +153,13 @@ def distanceObjectDetection(cv_depthimage):
     # closest: 6 in = 0.154 m
     # middle obstacles: 25 in = 0.635 m
     # farthest obstacles: 37 in = 0.94 m
-    lower_dist = 0.1
-    upper_dist = 1
+    lower_dist = 0.2
+    upper_dist = 1.5
 
     # Threshold the image to only include objects within the specified distance
     mask = cv2.inRange(cv_depthimage, lower_dist, upper_dist)
     mask_eroded = cv2.erode(mask, None, iterations = 3)
-    mask_eroded_dilated = cv2.dilate(mask_eroded, None, iterations = 10)
+    mask_eroded_dilated = cv2.dilate(mask_eroded, None, iterations = 15)
     
     try:
         image_pub.publish(cv_bridge.cv2_to_imgmsg(mask_eroded_dilated, "passthrough"))
