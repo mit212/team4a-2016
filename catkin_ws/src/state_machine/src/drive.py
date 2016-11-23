@@ -22,10 +22,7 @@ class Drive(State):
         self.arrived = False
         self.arrived_position = False
 
-        # this will actually be different depending on the input
-        # eventually make a function to determine this
-        # for now just leave for quick testing
-        self.target_pose2d = [.25, 0.9, np.pi/2]
+        self.target_pose2d = self.get_target_pose()
 
         self.tags_in_view = []
         self.detection_poses = {}
@@ -38,21 +35,24 @@ class Drive(State):
         self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
         
     def run(self):
-        # also change source frame based on current input
+        april_tag_source = '/apriltag' + str(self.current_input)
+
         if self.current_input in self.tags_in_view:
             poselist_tag_cam = helper.pose2poselist(self.detection_poses[self.current_input])
             pose_tag_base = helper.transformPose(pose = poselist_tag_cam,  sourceFrame = '/camera', targetFrame = '/robot_base', lr = self.listener)
             poselist_base_tag = helper.invPoselist(pose_tag_base)
-            pose_base_map = helper.transformPose(pose = poselist_base_tag, sourceFrame = '/apriltag2', targetFrame = '/map', lr = self.listener)
+            pose_base_map = helper.transformPose(pose = poselist_base_tag, sourceFrame = april_tag_source, targetFrame = '/map', lr = self.listener)
             helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/robot_base', parent_frame_id = '/map', npub = 1)
             self.drive()
         else:
             self.stop()
     
     def next_input(self):
-        return 0 # change later
+        # change later
+        return 0
 
     def next_state(self):
+        # change later
         return Stop(self.next_input())
 
     def is_finished(self):
@@ -60,7 +60,12 @@ class Drive(State):
 
     def is_stop_state(self):
         return False
-        
+    
+    def get_target_pose(self):
+        if self.current_input == 2:
+            return [.25, 0.9, np.pi/2]
+        return [0, 0, 0]
+
     def apriltag_callback(self, data):
         del self.tags_in_view[:]
         for detection in data.detections:
