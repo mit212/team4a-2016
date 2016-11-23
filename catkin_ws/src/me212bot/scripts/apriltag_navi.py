@@ -18,7 +18,7 @@ from apriltags.msg import AprilTagDetections
 import me212helper.helper as helper
 
 class ApriltagNavigator():
-    def __init__(self, constant_vel = True):
+    def __init__(self, constant_vel = False):
         self.listener = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
         self.apriltag_sub = rospy.Subscriber("/apriltags/detections", AprilTagDetections, self.apriltag_callback, queue_size = 1)
@@ -38,11 +38,11 @@ class ApriltagNavigator():
         # use apriltag pose detection to find where is the robot
         ##
         for detection in data.detections:
-            print detection.pose.position.x, detection.pose.position.y, detection.pose.position.z
+            #print detection.pose.position.x, detection.pose.position.y, detection.pose.position.z
             if detection.id == 0: 
-                pose_tag_base = helper.poseTransform(helper.pose2list(detection.pose),  homeFrame = '/camera', targetFrame = '/base_link', listener = self.listener)
-                pose_base_map = helper.poseTransform(helper.invPoseList(pose_tag_base), homeFrame = '/apriltag', targetFrame = '/map', listener = self.listener)
-                helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/base_link', parent_frame_id = '/map', npub = 1)
+                pose_tag_base = helper.transformPose(pose = helper.pose2poselist(detection.pose),  sourceFrame = '/camera', targetFrame = '/robot_base', lr = self.listener)
+                pose_base_map = helper.transformPose(pose = helper.invPoselist(pose_tag_base), sourceFrame = '/apriltag0', targetFrame = '/map', lr = self.listener)
+                helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/robot_base', parent_frame_id = '/map', npub = 1)
 
     def constant_vel_loop(self):
         while not rospy.is_shutdown() :
@@ -52,7 +52,7 @@ class ApriltagNavigator():
         
     def navi_loop(self):
         ##
-        target_pose2d = [0.25, 0, np.pi]
+        target_pose2d = [0.25, 0.8, np.pi]
         
         ##
         wv = WheelVelCmd()
@@ -65,7 +65,7 @@ class ApriltagNavigator():
             
             ## 
             # 1. get robot pose
-            robot_pose3d = helper.lookupTransformList('/map', '/base_link', self.listener)
+            robot_pose3d = helper.lookupTransform(self.listener, '/map', '/robot_base')
             
             if robot_pose3d is None:
                 print '1. Tag not in view, Stop'
@@ -96,7 +96,7 @@ class ApriltagNavigator():
             # print 'norm delta', np.linalg.norm( pos_delta ), 'diffrad', diffrad(robot_yaw, target_pose2d[2])
             # print 'heading_err_cross', heading_err_cross
             
-            if arrived or (np.linalg.norm( pos_delta ) < 0.08 and np.fabs(diffrad(robot_yaw, target_pose2d[2]))<0.05) :
+            if arrived or (np.linalg.norm( pos_delta ) < 0.08 and np.fabs(helper.diffrad(robot_yaw, target_pose2d[2]))<0.05) :
                 print 'Case 2.1  Stop'
                 wv.desiredWV_R = 0  
                 wv.desiredWV_L = 0
