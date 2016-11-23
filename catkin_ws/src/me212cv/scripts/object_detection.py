@@ -7,7 +7,7 @@ import rospy
 import numpy as np
 import cv2  # OpenCV module
 
-from msg import DetectedObject
+from me212cv.msg import DetectedObject
 from sensor_msgs.msg import Image, CameraInfo
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point, Pose, Twist, Vector3, Quaternion
@@ -21,6 +21,9 @@ rospy.init_node('object_detection', anonymous=True)
 
 # Publisher for publishing pyramid marker in rviz
 vis_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10) 
+
+# Publisher for converting a CV Image to a ROS Image
+image_pub = rospy.Publisher('distance_image', Image, queue_size = 1)
 
 # Publisher for publishing information about the detected objects
 object_pub = rospy.Publisher('object_info', DetectedObject, queue_size = 1)
@@ -157,8 +160,14 @@ def distanceObjectDetection(cv_depthimage):
     mask = cv2.inRange(cv_depthimage, lower_dist, upper_dist)
     mask_eroded = cv2.erode(mask, None, iterations = 3)
     mask_eroded_dilated = cv2.dilate(mask_eroded, None, iterations = 10)
-            
-    showImageInCVWindow(cv_depthimage, mask_eroded, mask_eroded_dilated)
+    
+    try:
+        image_pub.publish(cv_bridge.cv2_to_imgmsg(mask_eroded_dilated, "passthrough"))
+    except CvBridgeError as e:
+        print(e)
+
+    cv2.imwrite('DistanceImage.jpg', cv_depthimage)
+    #showImageInCVWindow(cv_depthimage, mask_eroded, mask_eroded_dilated)
     _, contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
     return contours, mask_eroded_dilated
 
@@ -180,10 +189,10 @@ def rosDistCallBack(rgb_data, depth_data):
         center_z = cv_depthimage2[int(center_y)][int(center_x)]
 
         # make sure the depth is in the normal range 0.1-10 meter
-        if math.isnan(zc) or center_z < 0.1 or center_z > 10.0:
+        if math.isnan(center_z) or center_z < 0.1 or center_z > 10.0:
             continue
             
-        print 'z', centerz
+        print 'z', center_z
 
         obj = DetectedObject()
         obj.center_x = center_x
