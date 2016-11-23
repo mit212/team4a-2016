@@ -7,6 +7,7 @@ import rospy
 import numpy as np
 import cv2  # OpenCV module
 
+from msg import DetectedObject
 from sensor_msgs.msg import Image, CameraInfo
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point, Pose, Twist, Vector3, Quaternion
@@ -20,6 +21,9 @@ rospy.init_node('object_detection', anonymous=True)
 
 # Publisher for publishing pyramid marker in rviz
 vis_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10) 
+
+# Publisher for publishing information about the detected objects
+object_pub = rospy.Publisher('object_info', DetectedObject, queue_size = 1)
 
 # Bridge to convert ROS Image type to OpenCV Image type
 cv_bridge = CvBridge()
@@ -141,7 +145,7 @@ def HSVObjectDetection(cv_image, toPrint = True):
     return contours, mask_eroded_dilated
 
 # used to filter an image by distance
-def distanceObjectDetection(cv_depthimage, toPrint = True):
+def distanceObjectDetection(cv_depthimage):
     # range of acceptable distances
     # closest: 6 in = 0.154 m
     # middle obstacles: 25 in = 0.635 m
@@ -153,10 +157,7 @@ def distanceObjectDetection(cv_depthimage, toPrint = True):
     mask = cv2.inRange(cv_depthimage, lower_dist, upper_dist)
     mask_eroded = cv2.erode(mask, None, iterations = 3)
     mask_eroded_dilated = cv2.dilate(mask_eroded, None, iterations = 10)
-    
-    if toPrint:
-        print 'hsv', hsv_image[240][320] # the center point hsv
-        
+            
     showImageInCVWindow(cv_depthimage, mask_eroded, mask_eroded_dilated)
     _, contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
     return contours, mask_eroded_dilated
@@ -170,23 +171,32 @@ def rosDistCallBack(rgb_data, depth_data):
     except CvBridgeError as e:
         print(e)
             
-    contours, mask_image = distanceObjectDetection(cv_depthimage, toPrint = False)
+    contours, mask_image = distanceObjectDetection(cv_depthimage)
 
     for cnt in contours:
         xp,yp,w,h = cv2.boundingRect(cnt)
-        centerx, centery = xp+w/2, yp+h/2
+        center_x, center_y = xp+w/2, yp+h/2
 
-        zc = cv_depthimage2[int(centery)][int(centerx)]
+        center_z = cv_depthimage2[int(center_y)][int(center_x)]
 
-        # Get depth value from depth image, need to make sure the value is in the normal range 0.1-10 meter
-        if math.isnan(zc) or zc < 0.1 or zc > 10.0:
+        # make sure the depth is in the normal range 0.1-10 meter
+        if math.isnan(zc) or center_z < 0.1 or center_z > 10.0:
             continue
             
-        print 'zc', zc
+        print 'z', centerz
+
+        obj = DetectedObject()
+        obj.center_x = center_x
+        obj.center_y = center_y
+        obj.center_z = center_z
+        obj.width = w
+        obj.height = h
+
+        object_pub.publish(obj)
 
         cv2.rectangle(cv_image,(xp,yp),(xp+w,yp+h),[0,255,255],2)
         
-        showPyramid(centerx, centery, zc, w, h)
+        showPyramid(center_x, center_y, center_z, w, h)
         
 # Task 3 callback
 def rosRGBDCallBack(rgb_data, depth_data):
