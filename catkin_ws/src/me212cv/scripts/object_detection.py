@@ -189,8 +189,9 @@ def rosDistCallBack(rgb_data, depth_data):
 
         center_z = cv_depthimage2[int(center_y)][int(center_x)]
 
+        is_arm_base = center_x > 300 and center_y > 415 and w > 600 and h > 110
         # make sure the depth is in the normal range 0.1-10 meter
-        if math.isnan(center_z) or center_z < 0.1 or center_z > 10.0:
+        if math.isnan(center_z) or center_z < 0.1 or center_z > 10.0 or is_arm_base:
             continue
             
         print 'z', center_z
