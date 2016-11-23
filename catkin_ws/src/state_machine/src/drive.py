@@ -61,6 +61,7 @@ class Drive(State):
     def is_stop_state(self):
         return False
     
+    ## next step: use distance information to set target
     def get_target_pose(self):
         if self.current_input == 2:
             return [.25, 0.9, np.pi/2]
@@ -123,8 +124,6 @@ class Drive(State):
             # TODO: clean up all these magic numbers
 
             # TODO: replace with real controller
-
-            print "distance?", np.linalg.norm( pos_delta )
 
             if self.arrived or (np.linalg.norm( pos_delta ) < .08 and np.fabs(helper.diffrad(robot_yaw, self.target_pose2d[2]))<0.05) :
                 print 'Case 2.1  Stop'
