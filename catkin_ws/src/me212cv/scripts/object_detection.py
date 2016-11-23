@@ -143,9 +143,9 @@ def HSVObjectDetection(cv_image, toPrint = True):
 # used to filter an image by distance
 def distanceObjectDetection(cv_depthimage, toPrint = True):
     # range of acceptable distances
-    # closest: 6 in = 0.154
-    # middle obstacles: 25 in = 0.635
-    # farthest obstacles: 37 in = 0.94
+    # closest: 6 in = 0.154 m
+    # middle obstacles: 25 in = 0.635 m
+    # farthest obstacles: 37 in = 0.94 m
     lower_dist = 0.1
     upper_dist = 1
 
@@ -174,15 +174,16 @@ def rosDistCallBack(rgb_data, depth_data):
 
     for cnt in contours:
         xp,yp,w,h = cv2.boundingRect(cnt)
-        
+        centerx, centery = xp+w/2, yp+h/2
+
+        zc = cv_depthimage2[int(centery)][int(centerx)]
+
         # Get depth value from depth image, need to make sure the value is in the normal range 0.1-10 meter
-        if not math.isnan(cv_depthimage2[int(yp)][int(xp)]) and cv_depthimage2[int(yp)][int(xp)] > 0.1 and cv_depthimage2[int(yp)][int(xp)] < 10.0:
-            zc = cv_depthimage2[int(yp)][int(xp)]
-            #print 'zc', zc
-        else:
+        if math.isnan(zc) or zc < 0.1 or zc > 10.0:
             continue
             
-        centerx, centery = xp+w/2, yp+h/2
+        print 'zc', zc
+
         cv2.rectangle(cv_image,(xp,yp),(xp+w,yp+h),[0,255,255],2)
         
         showPyramid(centerx, centery, zc, w, h)

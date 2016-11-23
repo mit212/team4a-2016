@@ -117,6 +117,8 @@ class Drive(State):
 
             # TODO: clean up all these magic numbers
 
+            # TODO: replace with real controller
+
             print "distance?", np.linalg.norm( pos_delta )
 
             if self.arrived or (np.linalg.norm( pos_delta ) < .08 and np.fabs(helper.diffrad(robot_yaw, self.target_pose2d[2]))<0.05) :
