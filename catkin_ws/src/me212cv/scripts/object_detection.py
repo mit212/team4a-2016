@@ -166,7 +166,8 @@ def distanceObjectDetection(cv_depthimage):
     except CvBridgeError as e:
         print(e)
 
-    cv2.imwrite('DistanceImage.jpg', cv_depthimage)
+    # write image to file - only for testing
+    #cv2.imwrite('DistanceImage.jpg', cv_depthimage)
     #showImageInCVWindow(cv_depthimage, mask_eroded, mask_eroded_dilated)
     _, contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
     return contours, mask_eroded_dilated
