@@ -34,7 +34,7 @@ class Arduino():
         
 
     def cmdvel(self, msg):  
-        self.comm.write("%f,%f\n" % (msg.desiredWV_R, msg.desiredWV_L))
+        self.comm.write("%f,%f,%f\n" % (msg.desiredWV_R, msg.desiredWV_L, msg.desiredWrist))
     
     # loop() is for reading odometry from Arduino and publish to rostopic.
     def loop(self):

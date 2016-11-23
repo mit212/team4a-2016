@@ -45,11 +45,11 @@ class RunPlanning():
             
             if run:
                 self.move_wrist(WRIST_UP)   
-                self.run_distance(5, 20.0)
+                self.run_distance(15, 20.0)
                 self.stop()
 
                 self.move_wrist(WRIST_DOWN)
-                self.run_distance(5, -20.0)
+                self.run_distance(15, -20.0)
                 self.move_wrist(WRIST_UP)
                 self.stop()
 
