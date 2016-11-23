@@ -21,7 +21,11 @@ class Drive(State):
 
         self.arrived = False
         self.arrived_position = False
-        self.target_pose2d = [0.25, 0, np.pi]
+
+        # this will actually be different depending on the input
+        # eventually make a function to determine this
+        # for now just leave for quick testing
+        self.target_pose2d = [.25, 0.9, np.pi/2]
 
         self.tags_in_view = []
         self.detection_poses = {}
@@ -34,14 +38,16 @@ class Drive(State):
         self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
         
     def run(self):
+        # also change source frame based on current input
         if self.current_input in self.tags_in_view:
             poselist_tag_cam = helper.pose2poselist(self.detection_poses[self.current_input])
             pose_tag_base = helper.transformPose(pose = poselist_tag_cam,  sourceFrame = '/camera', targetFrame = '/robot_base', lr = self.listener)
-            print pose_tag_base
             poselist_base_tag = helper.invPoselist(pose_tag_base)
-            pose_base_map = helper.transformPose(pose = poselist_base_tag, sourceFrame = '/apriltag0', targetFrame = '/map', lr = self.listener)
+            pose_base_map = helper.transformPose(pose = poselist_base_tag, sourceFrame = '/apriltag2', targetFrame = '/map', lr = self.listener)
             helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/robot_base', parent_frame_id = '/map', npub = 1)
             self.drive()
+        else:
+            self.stop()
     
     def next_input(self):
         return 0 # change later
@@ -56,19 +62,26 @@ class Drive(State):
         return False
         
     def apriltag_callback(self, data):
-        print "here"
         del self.tags_in_view[:]
         for detection in data.detections:
             self.tags_in_view.append(detection.id)
             self.detection_poses[detection.id] = detection.pose
     
-    # probably put this code in the run method, this just here for testing
+    def stop(self):
+        wv = WheelVelCmd()
+
+        if not rospy.is_shutdown():
+            print '1. Tag not in view, Stop'
+            wv.desiredWV_R = 0  # right, left
+            wv.desiredWV_L = 0
+            self.velcmd_pub.publish(wv)
+
+        rospy.sleep(.01)
+
     def drive(self):
         wv = WheelVelCmd()
-        
-        #rate = rospy.Rate(100) # 100hz
 
-        if not rospy.is_shutdown() :
+        if not rospy.is_shutdown():
             
             # 1. get robot pose
             robot_pose3d = helper.lookupTransform(self.listener, '/map', '/robot_base')
@@ -86,8 +99,6 @@ class Drive(State):
             robot_yaw = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]
             robot_pose2d = robot_position2d + [robot_yaw]
             
-            print robot_yaw
-
             # 2. navigation policy
             # 2.1 if       in the target, 
             # 2.2 else if  close to target position, turn to the target orientation
@@ -98,24 +109,24 @@ class Drive(State):
             robot_heading_vec = np.array([np.cos(robot_yaw), np.sin(robot_yaw)])
             heading_err_cross = helper.cross2d( robot_heading_vec, pos_delta / np.linalg.norm(pos_delta) )
             
-            '''print 'pos_delta', pos_delta
-            print 'robot_heading_vec', robot_heading_vec
-            print 'heading_err_cross', heading_err_cross'''
-
             # print 'robot_position2d', robot_position2d, 'target_position2d', target_position2d
             # print 'pos_delta', pos_delta
             # print 'robot_yaw', robot_yaw
             # print 'norm delta', np.linalg.norm( pos_delta ), 'diffrad', diffrad(robot_yaw, self.target_pose2d[2])
             # print 'heading_err_cross', heading_err_cross
-            
-            if self.arrived or (np.linalg.norm( pos_delta ) < 0.08 and np.fabs(diffrad(robot_yaw, self.target_pose2d[2]))<0.05) :
+
+            # TODO: clean up all these magic numbers
+
+            print "distance?", np.linalg.norm( pos_delta )
+
+            if self.arrived or (np.linalg.norm( pos_delta ) < .08 and np.fabs(helper.diffrad(robot_yaw, self.target_pose2d[2]))<0.05) :
                 print 'Case 2.1  Stop'
                 wv.desiredWV_R = 0  
                 wv.desiredWV_L = 0
                 self.arrived = True
-            elif np.linalg.norm( pos_delta ) < 0.08:
+            elif np.linalg.norm( pos_delta ) < .08:
                 self.arrived_position = True
-                if diffrad(robot_yaw, self.target_pose2d[2]) > 0:
+                if helper.diffrad(robot_yaw, self.target_pose2d[2]) > 0:
                     print 'Case 2.2.1  Turn right slowly'      
                     wv.desiredWV_R = -0.05 
                     wv.desiredWV_L = 0.05
@@ -140,5 +151,4 @@ class Drive(State):
                     
             self.velcmd_pub.publish(wv)  
             
-            rospy.sleep(2)
-            #rate.sleep()
+            rospy.sleep(.01)
