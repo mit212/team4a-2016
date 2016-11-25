@@ -113,9 +113,8 @@ class SerialComm {
             Serial.print(robotPose.X, 6);   Serial.print(",");  //X 
             Serial.print(robotPose.Y, 6);   Serial.print(",");  //Y 
             Serial.println(robotPose.Th);   Serial.print(",");  //Th
-            Serial.println(bumperState);    Serial.print(",");  //bumpers
-            Serial.println(userState);      Serial.print(",");  //user
-            Serial.println(wrist)
+            Serial.println(isSafe);         Serial.print(",");  //is it safe to move
+            Serial.println(wristBumperState);                   //for arm zero-ing
             prevSerialTime = current_time;
         }
     }
