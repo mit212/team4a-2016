@@ -8,8 +8,10 @@
 #include "helper.h"
 #include "ServoTimer2.h"
 
-#define servoWristPin  2
-#define togglePin      3
+#define servoWristPin  3
+#define wristPin      2
+#define userPin     A3
+#define bumperPin     A2
 ServoTimer2 servoWrist;
 
 EncoderMeasurement  encoder(26);      // encoder handler class, set the motor type 53 or 26 here
@@ -20,6 +22,7 @@ unsigned long       prevTime = 0;
 
 boolean usePathPlanner = true;
 boolean toggleState = false;
+boolean bumperState = false;
 
 float wrist_state = 0; 
 
@@ -33,16 +36,21 @@ void setup() {
     encoder.init();  // connect with encoder
     wheelVelCtrl.init();        // connect with motor
     servoWrist.attach(servoWristPin);
-    pinMode(togglePin, INPUT);
+    pinMode(wristPin, INPUT);
+    pinMode(bumperPin, INPUT);
     delay(1e3);                 // delay 1000 ms so the robot doesn't drive off without you
 }
 
 void loop() {
     //timed loop implementation
     unsigned long currentTime = micros();
-    toggleState = digitalRead(togglePin);
+    //toggleState = digitalRead(togglePin);
+    bumperState = digitalRead(bumperPin);
+    Serial.print("bumper state");
+    Serial.print(bumperState);
+    Serial.print("\n");
     
-    if (currentTime - prevTime >= PERIOD_MICROS) {
+    if ((currentTime - prevTime >= PERIOD_MICROS) && bumperState) {
       
         // 1. Check encoder
         encoder.update(); 
@@ -70,9 +78,9 @@ void loop() {
         {
           servoWrist.write(wrist_up_pos);
         }
-        Serial.print("wrist command: ");
-        Serial.print(serialComm.desiredWrist);
-        Serial.print("\n");
+        //Serial.print("wrist command: ");
+        //Serial.print(serialComm.desiredWrist);
+        //Serial.print("\n");
 
         prevTime = currentTime; // update time
     }
