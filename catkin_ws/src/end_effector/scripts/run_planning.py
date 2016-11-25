@@ -47,9 +47,10 @@ class RunPlanning():
                 self.move_wrist(WRIST_UP)   
                 self.run_distance(15, 20.0)
                 self.stop()
-
                 self.move_wrist(WRIST_DOWN)
+                rospy.sleep(.5)
                 self.run_distance(15, -20.0)
+                rospy.sleep(.5)
                 self.move_wrist(WRIST_UP)
                 self.stop()
 
