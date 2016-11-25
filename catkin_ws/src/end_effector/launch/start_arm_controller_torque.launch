@@ -8,7 +8,7 @@
                 joint1_controller"
           output="screen"/>
           
-    <rosparam file="$(find end_effector)/config/joint2_torque.yaml" command="load"/>
+    <rosparam file="$(find end_effector)/config/joint2.yaml" command="load"/>
     <node name="joint2_controller_spawner" pkg="dynamixel_controllers" type="controller_spawner.py"
           args="--manager=dxl_manager
                 --port arm_port
