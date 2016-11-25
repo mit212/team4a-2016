@@ -59,6 +59,7 @@ class Drive(State):
     def is_stop_state(self):
         return False
     
+    ## change to return list and update boolean logic
     ## next steps: use object detection to get next pose
     def get_target_pose(self):
         if self.current_input == 2:
@@ -82,7 +83,7 @@ class Drive(State):
 
         rospy.sleep(.01)
 
-    def drive(self):
+    def drive(self, target_pose2d):
         wv = WheelVelCmd()
 
         if not rospy.is_shutdown():
@@ -98,7 +99,7 @@ class Drive(State):
                 return
             
             robot_position2d = robot_pose3d[0:2]
-            target_position2d = self.target_pose2d[0:2]
+            target_position2d = target_pose2d[0:2]
             
             robot_yaw = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]
             robot_pose2d = robot_position2d + [robot_yaw]
@@ -116,21 +117,21 @@ class Drive(State):
             # print 'robot_position2d', robot_position2d, 'target_position2d', target_position2d
             # print 'pos_delta', pos_delta
             # print 'robot_yaw', robot_yaw
-            # print 'norm delta', np.linalg.norm( pos_delta ), 'diffrad', diffrad(robot_yaw, self.target_pose2d[2])
+            # print 'norm delta', np.linalg.norm( pos_delta ), 'diffrad', diffrad(robot_yaw, target_pose2d[2])
             # print 'heading_err_cross', heading_err_cross
 
             # TODO: clean up all these magic numbers
 
             # TODO: replace with real controller
 
-            if self.arrived or (np.linalg.norm( pos_delta ) < .08 and np.fabs(helper.diffrad(robot_yaw, self.target_pose2d[2]))<0.05) :
+            if self.arrived or (np.linalg.norm( pos_delta ) < .08 and np.fabs(helper.diffrad(robot_yaw, target_pose2d[2]))<0.05) :
                 print 'Case 2.1  Stop'
                 wv.desiredWV_R = 0  
                 wv.desiredWV_L = 0
                 self.arrived = True
             elif np.linalg.norm( pos_delta ) < .08:
                 self.arrived_position = True
-                if helper.diffrad(robot_yaw, self.target_pose2d[2]) > 0:
+                if helper.diffrad(robot_yaw, target_pose2d[2]) > 0:
                     print 'Case 2.2.1  Turn right slowly'      
                     wv.desiredWV_R = -0.05 
                     wv.desiredWV_L = 0.05
