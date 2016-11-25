@@ -131,35 +131,24 @@ class Drive(State):
 
             # TODO: replace with real controller
 
-            if target_pose2d.arrived or (np.linalg.norm( pos_delta ) < .08 and np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta))<0.05) :
-                print 'Case 2.1  Stop'
+            k = np.linalg.norm(pos_delta) * 10
+
+            if target_pose2d.arrived or k < .08 and np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta))<0.05) :
+                print 'Case 2.1 Stop'
                 wv.desiredWV_R = 0  
                 wv.desiredWV_L = 0
                 target_pose2d.arrived = True
-            elif np.linalg.norm( pos_delta ) < .08:
-                target_pose2d.arrived_position = True
-                if helper.diffrad(robot_yaw, target_pose2d.theta) > 0:
-                    print 'Case 2.2.1  Turn right slowly'      
-                    wv.desiredWV_R = -0.05 
-                    wv.desiredWV_L = 0.05
-                else:
-                    print 'Case 2.2.2  Turn left slowly'
-                    wv.desiredWV_R = 0.05  
-                    wv.desiredWV_L = -0.05
-                    
             elif target_pose2d.arrived_position or np.fabs( heading_err_cross ) < 0.2:
-                print 'Case 2.3  Straight forward'  
-                wv.desiredWV_R = 0.1
-                wv.desiredWV_L = 0.1
+                print 'Case 2.2 Straight forward'
+                wv.desiredWV_R = 0.1 * k
+                wv.desiredWV_L = 0.1 * k
             else:
-                if heading_err_cross < 0:
-                    print 'Case 2.4.1  Turn right'
-                    wv.desiredWV_R = -0.1
-                    wv.desiredWV_L = 0.1
-                else:
-                    print 'Case 2.4.2  Turn left'
-                    wv.desiredWV_R = 0.1
-                    wv.desiredWV_L = -0.1
+                print 'Case 2.1 Turning'
+                if k < .08:
+                    target_pose2d.arrived_position = True
+                mult = heading_err_cross / np.fabs(heading_err_cross)
+                wv.desiredWV_R = -0.1 * k * mult
+                wv.desiredWV_L = 0.1 * k * mult
                     
             self.velcmd_pub.publish(wv)  
             
