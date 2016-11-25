@@ -46,13 +46,16 @@ class Arduino():
             splitData = serialData.split(',');
             
             try:
-                x     = float(splitData[0]);
-                y     = float(splitData[1]);
-                theta = float(splitData[2]);
+                x     = float(splitData[0])
+                y     = float(splitData[1])
+                theta = float(splitData[2])
+                isSafe = float(splitData[3])
+                wristBumperState = float(splitData[4])
                 hz    = 1.0 / (rospy.Time.now().to_sec() - self.prevtime.to_sec())
+
                 
                 cnt += 1
-                print 'x=', x, ' y=', y, ' theta =', theta, ' hz =', hz; 
+                print 'x=', x, ' y=', y, ' theta =', theta, ' hz =', hz, ' isSafe =', isSafe, ' wristBumperState', wristBumperState; 
                     
                 self.prevtime = rospy.Time.now()
                 

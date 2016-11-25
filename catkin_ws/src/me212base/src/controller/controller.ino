@@ -21,7 +21,7 @@ SerialComm          serialComm;       // serial communication class
 unsigned long       prevTime = 0;
 
 boolean usePathPlanner = true;
-boolean userState = false;
+boolean userState = true;
 boolean bumperState = false;
 boolean wristBumperState = false;
 boolean isSafe = true;
@@ -65,15 +65,15 @@ void loop() {
     }
 
     //if it has been not safe to move, but the user switch is pressed, then it is safe to move again
-    if ((isSafe = false) && (userState == USER_PRESSED)){
+    if ((isSafe == false) && (userState == USER_PRESSED)){
       isSafe = true;
     }
     
-    Serial.print("bumper state");
-    Serial.print(bumperState);
-    Serial.print("\n");
+    /*Serial.print("isSafe ");
+    Serial.print(isSafe);
+    Serial.print("\n");*/
     
-    if ((currentTime - prevTime >= PERIOD_MICROS) && isSafe) {
+    if ((currentTime - prevTime >= PERIOD_MICROS)) {
       
         // 1. Check encoder
         encoder.update(); 
@@ -85,21 +85,23 @@ void loop() {
         serialComm.send(robotPose); 
         serialComm.receiveSerialData();
 
-        // 4. Send the velocity command to wheel velocity controller
-        wheelVelCtrl.doPIControl("Left",  serialComm.desiredWV_L, encoder.v_L); 
-        wheelVelCtrl.doPIControl("Right", serialComm.desiredWV_R, encoder.v_R);
-
         //update wristState
         wristState = serialComm.desiredWrist;
+
+        if (isSafe) {
+          // 4. Send the velocity command to wheel velocity controller
+          wheelVelCtrl.doPIControl("Left",  serialComm.desiredWV_L, encoder.v_L); 
+          wheelVelCtrl.doPIControl("Right", serialComm.desiredWV_R, encoder.v_R);        
         
-        //move the wrist
-        if (wristState == WRIST_DOWN)
-        {
-           servoWrist.write(WRIST_DOWN_POS);
-        }
-        else
-        {
-          servoWrist.write(WRIST_UP_POS);
+          //move the wrist
+          if (wristState == WRIST_DOWN)
+          {
+             servoWrist.write(WRIST_DOWN_POS);
+          }
+          else
+          {
+            servoWrist.write(WRIST_UP_POS);
+          }
         }
         //Serial.print("wrist command: ");
         //Serial.print(serialComm.desiredWrist);

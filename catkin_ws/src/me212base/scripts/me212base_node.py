@@ -41,27 +41,30 @@ class Arduino():
         while not rospy.is_shutdown():
             # 1. get a line of string that represent current odometry from serial
             serialData = self.comm.readline()
-            print serialData;
+            #print serialData
             
-            # # 2. parse the string e.g. "0.1,0.2,0.1" to doubles
-            # splitData = serialData.split(',');
-            
-            # try:
-            #     x     = float(splitData[0]);
-            #     y     = float(splitData[1]);
-            #     theta = float(splitData[2]);
-            #     hz    = 1.0 / (rospy.Time.now().to_sec() - self.prevtime.to_sec())
+            # 2. parse the string e.g. "0.1,0.2,0.1" to doubles
+            splitData = serialData.split(',')
+            #print splitData
+
+            try:
+                x     = float(splitData[0])
+                y     = float(splitData[1])
+                theta = float(splitData[2])
+                isSafe = float(splitData[3])
+                wristBumperState = float(splitData[4])
+                hz    = 1.0 / (rospy.Time.now().to_sec() - self.prevtime.to_sec())
                 
-            #     cnt += 1
-            #     print 'x=', x, ' y=', y, ' theta =', theta, ' hz =', hz; 
+                #cnt += 1
+                print 'x=', x, ' y=', y, ' theta =', theta, ' hz =', hz, ' isSafe =', isSafe, ' wristBumperState =', wristBumperState; 
                     
-            #     self.prevtime = rospy.Time.now()
+                self.prevtime = rospy.Time.now()
                 
-            # except:
-            #     # print out msg if there is an error parsing a serial msg
-            #     print 'Cannot parse', splitData
-            #     ex_type, ex, tb = sys.exc_info()
-            #     traceback.print_tb(tb)
+            except:
+                # print out msg if there is an error parsing a serial msg
+                print 'Cannot parse', splitData
+                ex_type, ex, tb = sys.exc_info()
+                traceback.print_tb(tb)
 
 
 def main():

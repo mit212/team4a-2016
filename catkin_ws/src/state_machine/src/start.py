@@ -1,5 +1,6 @@
 from state import State
 from search import Search
+from catch import Catch
 
 class Start(State):
     def __init__(self, current_input):
@@ -14,7 +15,7 @@ class Start(State):
         return 2
 
     def next_state(self):
-        return Search(self.next_input())
+        return Catch(self.next_input())
 
     def is_finished(self):
         return self.can_start

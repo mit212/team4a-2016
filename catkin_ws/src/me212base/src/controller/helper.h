@@ -87,7 +87,7 @@ class SerialComm {
   public:
     float desiredWV_R, desiredWV_L, desiredWrist;
 
-    boolean bumperState, userState;
+    boolean bumperState, userState, isSafe, wristBumperState;
     
     SerialComm(): desiredWV_R(0), desiredWV_L(0), desiredWrist(0){
         prevSerialTime = micros();
@@ -112,8 +112,8 @@ class SerialComm {
         if (current_time - prevSerialTime >= SERIAL_PERIOD_MICROS) {
             Serial.print(robotPose.X, 6);   Serial.print(",");  //X 
             Serial.print(robotPose.Y, 6);   Serial.print(",");  //Y 
-            Serial.println(robotPose.Th);   Serial.print(",");  //Th
-            Serial.println(isSafe);         Serial.print(",");  //is it safe to move
+            Serial.print(robotPose.Th);     Serial.print(",");  //Th
+            Serial.print(isSafe);           Serial.print(",");  //is it safe to move
             Serial.println(wristBumperState);                   //for arm zero-ing
             prevSerialTime = current_time;
         }

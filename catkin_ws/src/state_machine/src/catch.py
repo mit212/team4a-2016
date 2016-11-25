@@ -9,6 +9,8 @@ import tf.transformations as tfm
 
 from end_effector.msg import end_effector
 import me212helper.helper as helper
+import std_msgs.msg, sensor_msgs.msg, dynamixel_msgs.msg
+from me212base.msg import WheelVelCmd
 
 from state import State
 from stop import Stop
@@ -25,6 +27,8 @@ class Catch(State):
         self.position = 0
         self.current_pos = 0
         self.load = 0
+        self.catch_success = False
+        self.current_input = current_input
 
         self.exec_joint1_pub = rospy.Publisher('/joint1_controller/command', std_msgs.msg.Float64, queue_size=1)
         self.robotjoints = rospy.Subscriber('/joint1_controller/state', dynamixel_msgs.msg.JointState, self.end_effector_callback, queue_size=1)
