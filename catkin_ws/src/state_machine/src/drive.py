@@ -20,9 +20,10 @@ class Drive(State):
         self.current_input = current_input
 
         self.arrived = False
-        self.arrived_position = False
 
-        self.target_pose2d = self.get_target_pose()
+        self.target_pose_list = self.get_target_pose_list()
+        self.current_target = self.target_pose_list[0]
+        self.current_target_index = 0
 
         self.tags_in_view = []
         self.detection_poses = {}
@@ -43,7 +44,13 @@ class Drive(State):
             poselist_base_tag = helper.invPoselist(pose_tag_base)
             pose_base_map = helper.transformPose(pose = poselist_base_tag, sourceFrame = apriltag_source_frame, targetFrame = '/map', lr = self.listener)
             helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/robot_base', parent_frame_id = '/map', npub = 1)
-            self.drive()
+            self.drive(self.current_target)
+            if self.current_target.arrived:
+                if self.current_target_index == len(self.target_pose_list - 1):
+                    self.arrived = True
+                    return
+                self.current_target_index += 1
+                self.current_target = self.target_pose_list[self.current_target_index]
         else:
             self.stop()
     
@@ -61,10 +68,10 @@ class Drive(State):
     
     ## change to return list and update boolean logic
     ## next steps: use object detection to get next pose
-    def get_target_pose(self):
+    def get_target_pose_list(self):
         if self.current_input == 2:
-            return [.25, 0.9, np.pi/2]
-        return [0, 0, 0]
+            return [new Pose2D(.25, 0.9, np.pi/2)]
+        return [new Pose2D(0, 0, 0)]
 
     def apriltag_callback(self, data):
         del self.tags_in_view[:]
@@ -99,7 +106,7 @@ class Drive(State):
                 return
             
             robot_position2d = robot_pose3d[0:2]
-            target_position2d = target_pose2d[0:2]
+            target_position2d = target_pose2d.pose
             
             robot_yaw = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]
             robot_pose2d = robot_position2d + [robot_yaw]
@@ -117,21 +124,21 @@ class Drive(State):
             # print 'robot_position2d', robot_position2d, 'target_position2d', target_position2d
             # print 'pos_delta', pos_delta
             # print 'robot_yaw', robot_yaw
-            # print 'norm delta', np.linalg.norm( pos_delta ), 'diffrad', diffrad(robot_yaw, target_pose2d[2])
+            # print 'norm delta', np.linalg.norm( pos_delta ), 'diffrad', diffrad(robot_yaw, target_pose2d.theta)
             # print 'heading_err_cross', heading_err_cross
 
             # TODO: clean up all these magic numbers
 
             # TODO: replace with real controller
 
-            if self.arrived or (np.linalg.norm( pos_delta ) < .08 and np.fabs(helper.diffrad(robot_yaw, target_pose2d[2]))<0.05) :
+            if target_pose2d.arrived or (np.linalg.norm( pos_delta ) < .08 and np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta))<0.05) :
                 print 'Case 2.1  Stop'
                 wv.desiredWV_R = 0  
                 wv.desiredWV_L = 0
-                self.arrived = True
+                target_pose2d.arrived = True
             elif np.linalg.norm( pos_delta ) < .08:
-                self.arrived_position = True
-                if helper.diffrad(robot_yaw, target_pose2d[2]) > 0:
+                target_pose2d.arrived_position = True
+                if helper.diffrad(robot_yaw, target_pose2d.theta) > 0:
                     print 'Case 2.2.1  Turn right slowly'      
                     wv.desiredWV_R = -0.05 
                     wv.desiredWV_L = 0.05
@@ -140,7 +147,7 @@ class Drive(State):
                     wv.desiredWV_R = 0.05  
                     wv.desiredWV_L = -0.05
                     
-            elif self.arrived_position or np.fabs( heading_err_cross ) < 0.2:
+            elif target_pose2d.arrived_position or np.fabs( heading_err_cross ) < 0.2:
                 print 'Case 2.3  Straight forward'  
                 wv.desiredWV_R = 0.1
                 wv.desiredWV_L = 0.1
@@ -157,3 +164,14 @@ class Drive(State):
             self.velcmd_pub.publish(wv)  
             
             rospy.sleep(.01)
+
+class Pose2D():
+    def __init__(self, x, y, theta):
+        self.x = x
+        self.y = y
+        self.theta = theta
+
+        self.pose_list = [x, y, theta]
+
+        self.arrived = False
+        self.arrived_position = False
