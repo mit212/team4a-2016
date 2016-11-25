@@ -86,7 +86,9 @@ class PIController {
 class SerialComm {
   public:
     float desiredWV_R, desiredWV_L, desiredWrist;
-  
+
+    boolean bumperState, userState;
+    
     SerialComm(): desiredWV_R(0), desiredWV_L(0), desiredWrist(0){
         prevSerialTime = micros();
     }
@@ -110,7 +112,10 @@ class SerialComm {
         if (current_time - prevSerialTime >= SERIAL_PERIOD_MICROS) {
             Serial.print(robotPose.X, 6);   Serial.print(",");  //X 
             Serial.print(robotPose.Y, 6);   Serial.print(",");  //Y 
-            Serial.println(robotPose.Th);                       //Th
+            Serial.println(robotPose.Th);   Serial.print(",");  //Th
+            Serial.println(bumperState);    Serial.print(",");  //bumpers
+            Serial.println(userState);      Serial.print(",");  //user
+            Serial.println(wrist)
             prevSerialTime = current_time;
         }
     }

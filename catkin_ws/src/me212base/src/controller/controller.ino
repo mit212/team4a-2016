@@ -9,7 +9,7 @@
 #include "ServoTimer2.h"
 
 #define servoWristPin  3
-#define wristPin      2
+#define wristBumperPin      2
 #define userPin     A3
 #define bumperPin     A2
 ServoTimer2 servoWrist;
@@ -21,36 +21,59 @@ SerialComm          serialComm;       // serial communication class
 unsigned long       prevTime = 0;
 
 boolean usePathPlanner = true;
-boolean toggleState = false;
+boolean userState = false;
 boolean bumperState = false;
+boolean wristBumperState = false;
+boolean isSafe = true;
 
-float wrist_state = 0; 
+float wristState = 0; 
 
-const int wrist_up = 0;
-const int wrist_down = 1;
-const int wrist_up_pos = 100;
-const int wrist_down_pos = 1650;
+const int WRIST_UP = 0;
+const int WRIST_DOWN = 1;
+const int WRIST_UP_POS = 100;
+const int WRIST_DOWN_POS = 1650;
+
+const int BUMPER_PRESSED = false;
+const int BUMPER_NOT_PRESSED = true;
+
+const int USER_PRESSED = false;
+const int USER_NOT_PRESSED = true;
 
 void setup() {
     Serial.begin(115200);       // initialize Serial Communication
     encoder.init();  // connect with encoder
     wheelVelCtrl.init();        // connect with motor
     servoWrist.attach(servoWristPin);
-    pinMode(wristPin, INPUT);
+    pinMode(wristBumperPin, INPUT);
     pinMode(bumperPin, INPUT);
+    pinMode(userPin, INPUT);
     delay(1e3);                 // delay 1000 ms so the robot doesn't drive off without you
 }
 
 void loop() {
     //timed loop implementation
     unsigned long currentTime = micros();
-    //toggleState = digitalRead(togglePin);
+
+    //read the limit switches
+    userState = digitalRead(userPin);
+    wristBumperState = digitalRead(wristBumperPin);
     bumperState = digitalRead(bumperPin);
+    
+    //if either bumper switch has been pressed, it is not safe to move.
+    if (bumperState == BUMPER_PRESSED){
+      isSafe = false;
+    }
+
+    //if it has been not safe to move, but the user switch is pressed, then it is safe to move again
+    if ((isSafe = false) && (userState == USER_PRESSED)){
+      isSafe = true;
+    }
+    
     Serial.print("bumper state");
     Serial.print(bumperState);
     Serial.print("\n");
     
-    if ((currentTime - prevTime >= PERIOD_MICROS) && bumperState) {
+    if ((currentTime - prevTime >= PERIOD_MICROS) && isSafe) {
       
         // 1. Check encoder
         encoder.update(); 
@@ -66,17 +89,17 @@ void loop() {
         wheelVelCtrl.doPIControl("Left",  serialComm.desiredWV_L, encoder.v_L); 
         wheelVelCtrl.doPIControl("Right", serialComm.desiredWV_R, encoder.v_R);
 
-        //update wrist_state
-        wrist_state = serialComm.desiredWrist;
+        //update wristState
+        wristState = serialComm.desiredWrist;
         
         //move the wrist
-        if (wrist_state == wrist_down)
+        if (wristState == WRIST_DOWN)
         {
-           servoWrist.write(wrist_down_pos);
+           servoWrist.write(WRIST_DOWN_POS);
         }
         else
         {
-          servoWrist.write(wrist_up_pos);
+          servoWrist.write(WRIST_UP_POS);
         }
         //Serial.print("wrist command: ");
         //Serial.print(serialComm.desiredWrist);
