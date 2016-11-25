@@ -70,8 +70,8 @@ class Drive(State):
     ## next steps: use object detection to get next pose
     def get_target_pose_list(self):
         if self.current_input == 2:
-            return [new Pose2D(.25, 0.9, np.pi/2)]
-        return [new Pose2D(0, 0, 0)]
+            return [Pose2D(.25, 0.9, np.pi/2)]
+        return [Pose2D(0, 0, 0)]
 
     def apriltag_callback(self, data):
         del self.tags_in_view[:]
@@ -106,7 +106,7 @@ class Drive(State):
                 return
             
             robot_position2d = robot_pose3d[0:2]
-            target_position2d = target_pose2d.pose
+            target_position2d = target_pose2d.pose_list[0:2]
             
             robot_yaw = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]
             robot_pose2d = robot_position2d + [robot_yaw]
@@ -131,17 +131,17 @@ class Drive(State):
 
             # TODO: replace with real controller
 
-            k = np.linalg.norm(pos_delta) * 10
+            k = np.linalg.norm(pos_delta)
 
-            if target_pose2d.arrived or k < .08 and np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta))<0.05) :
+            if target_pose2d.arrived or k < .08 and np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta))<0.05:
                 print 'Case 2.1 Stop'
                 wv.desiredWV_R = 0  
                 wv.desiredWV_L = 0
                 target_pose2d.arrived = True
             elif target_pose2d.arrived_position or np.fabs( heading_err_cross ) < 0.2:
                 print 'Case 2.2 Straight forward'
-                wv.desiredWV_R = 0.1 * k
-                wv.desiredWV_L = 0.1 * k
+                wv.desiredWV_R = 0.1 * k * 1.5
+                wv.desiredWV_L = 0.1 * k * 1.5
             else:
                 print 'Case 2.1 Turning'
                 if k < .08:
