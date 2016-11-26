@@ -93,7 +93,7 @@ class Drive(State):
 
     def obstacle_callback(self,data):
         # want to add datapoints with significant width/height
-        if data.width > 40 and data.height > 40:
+        if data.width >= 75 and data.height >= 75:
             self.obstacles.append(data)
     
     # probably add in distance too
