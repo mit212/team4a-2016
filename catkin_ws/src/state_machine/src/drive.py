@@ -8,7 +8,6 @@ import traceback
 import sys
 import tf.transformations as tfm
 
-from me212cv.msg import DetectedObject
 from me212base.msg import WheelVelCmd
 from apriltags.msg import AprilTagDetections
 import me212helper.helper as helper
@@ -21,16 +20,11 @@ class Drive(State):
         self.current_input = current_input
 
         self.arrived = False
-
-        self.target_pose_list = self.get_target_pose_list()
-        self.current_target = self.target_pose_list[0]
-        self.current_target_index = 0
+        self.far_obstacles = False
 
         self.tags_in_view = []
         self.detection_poses = {}
         
-        self.obstacles = []
-
         self.listener = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
         rospy.sleep(0.5)
@@ -38,14 +32,18 @@ class Drive(State):
         self.apriltag_sub = rospy.Subscriber("/apriltags/detections", AprilTagDetections, self.apriltag_callback, queue_size = 1)
         self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
         
-        self.object_sub = rospy.Subscriber("/object_info", DetectedObject, self.obstacle_callback, queue_size = 1)
-        rospy.sleep(1)
-        self.far_obstacles = self.determine_obstacles()
+        if current_input - int(current_input) == 0.5:
+            self.far_obstacles = True
+            self.current_input = int(current_input)
+
+        self.target_pose_list = self.get_target_pose_list()
+        self.current_target = self.target_pose_list[0]
+        self.current_target_index = 0
+
+        print self.far_obstacles
         
     def run(self):
         apriltag_source_frame = '/apriltag' + str(self.current_input)
-
-        print self.far_obstacles
 
         if self.current_input in self.tags_in_view:
             poselist_tag_cam = helper.pose2poselist(self.detection_poses[self.current_input])
@@ -55,7 +53,7 @@ class Drive(State):
             helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/robot_base', parent_frame_id = '/map', npub = 1)
             #print self.current_target
             #print "before", self.current_target.arrived
-            #self.drive(self.current_target)
+            self.drive(self.current_target)
             #print "after", self.current_target.arrived
             if self.current_target.arrived:
                 if self.current_target_index == len(self.target_pose_list) - 1:
@@ -78,36 +76,18 @@ class Drive(State):
     def is_stop_state(self):
         return False
     
-    ## change to return list and update boolean logic
-    ## next steps: use object detection to get next pose
+    ## update to include more input options
     def get_target_pose_list(self):
-        if self.current_input == 2:
-            return [Pose2D(.25, 0.1, np.pi/2), Pose2D(0.25, 0.9, np.pi/2)]
-        return [Pose2D(0, 0, 0)]
+        if self.far_obstacles:
+            return [Pose2D(0.25, 0.9, np.pi/2), Pose2D(0.75, 0.9, 0)]
+        return [Pose2D(.15, 0.3, np.pi/2), Pose2D(0.25, 1.5, np.pi/2)]
+        #return [Pose2D(0, 0, 0)]
 
     def apriltag_callback(self, data):
         del self.tags_in_view[:]
         for detection in data.detections:
             self.tags_in_view.append(detection.id)
             self.detection_poses[detection.id] = detection.pose
-
-    def obstacle_callback(self,data):
-        # want to add datapoints with significant width/height
-        if data.width >= 75 and data.height >= 75:
-            self.obstacles.append(data)
-    
-    # probably add in distance too
-    def determine_obstacles(self):
-        relevant_obstacles = self.obstacles[-5:]
-        far_obs_count = 0
-        near_obs_count = 0
-        print relevant_obstacles
-        for obstacle in relevant_obstacles:
-            if obstacle.center_x >= 165 and obstacle.center_x <= 200 and obstacle.center_y >= 360 and obstacle.center_y <= 390:
-                if obstacle.width >= 350 and obstacle.height >= 170:
-                    return True
-        return False
-
 
     def stop(self):
         wv = WheelVelCmd()
