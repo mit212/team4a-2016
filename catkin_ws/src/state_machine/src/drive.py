@@ -17,10 +17,12 @@ from stop import Stop
 
 class Drive(State):
     def __init__(self, current_input):
+        global field_has_far_obstacles
+
         self.current_input = current_input
 
         self.arrived = False
-        self.far_obstacles = False
+        self.far_obstacles = rospy.get_param("field_has_far_obstacles")
 
         self.tags_in_view = []
         self.detection_poses = {}
@@ -65,9 +67,11 @@ class Drive(State):
             self.stop()
     
     def next_input(self):
-        return 0 # change later
+        return 2 # change later
 
     def next_state(self):
+        if self.current_input == 0:
+            return Search(self.next_input())
         return Stop(self.next_input())
 
     def is_finished(self):
@@ -78,10 +82,13 @@ class Drive(State):
     
     ## update to include more input options
     def get_target_pose_list(self):
-        if self.far_obstacles:
-            return [Pose2D(0.25, 0.9, np.pi/2), Pose2D(0.75, 0.9, 0)]
-        return [Pose2D(.15, 0.3, np.pi/2), Pose2D(0.25, 1.5, np.pi/2)]
-        #return [Pose2D(0, 0, 0)]
+        if self.current_input == 0:
+            return [Pose2D(.15, 0.3, np.pi/2)]
+        elif self.current_input == 2:
+            if self.far_obstacles:
+                return [Pose2D(0.15, 0.3, np.pi/2), Pose2D(0.75, 0.9, 0)]
+            return [Pose2D(.15, 0.3, np.pi/2), Pose2D(0.25, 1.5, np.pi/2)]
+        return [Pose2D(0, 0, 0)]
 
     def apriltag_callback(self, data):
         del self.tags_in_view[:]

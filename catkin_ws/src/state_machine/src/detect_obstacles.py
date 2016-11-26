@@ -14,29 +14,30 @@ import me212helper.helper as helper
 
 from state import State
 from stop import Stop
+from drive import Drive
+import search
 
 class DetectObstacles(State):
     def __init__(self, current_input):
+
         self.current_input = current_input
         
         self.obstacles = []
         
         self.object_sub = rospy.Subscriber("/object_info", DetectedObject, self.obstacle_callback, queue_size = 1)
         rospy.sleep(1)
-        self.far_obstacles = self.determine_obstacles()
+        field_has_far_obstacles = self.determine_obstacles()
 
-        print self.far_obstacles
-        
+        rospy.set_param("field_has_far_obstacles", field_has_far_obstacles)
+
     def run(self):
         pass
 
     def next_input(self):
-        if self.far_obstacles:
-            return 2.5
-        return 2 # change later ?
+        return 0
 
     def next_state(self):
-        return Drive(self.next_input())
+        return search.Search(self.next_input())
 
     def is_finished(self):
         return True
