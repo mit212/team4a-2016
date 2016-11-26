@@ -17,6 +17,16 @@ class Release():
         self.current_pos = 0
         self.load = 0
 
+        self.flipper_velocity = 0
+        self.flipper_position = 0
+        self.flipper_load = 0
+        self.flipper_is_moving = False
+
+        self.FLIPPER_UP_POS = -1.2
+        self.FLIPPER_DOWN_POS = 0.6
+        self.WRIST_UP = 0
+        self.WRIST_DOWN = 1
+
         self.exec_joint1_pub = rospy.Publisher('/joint1_controller/command', std_msgs.msg.Float64, queue_size=1)
         self.exec_joint2_pub = rospy.Publisher('/joint2_controller/command', std_msgs.msg.Float64, queue_size=1)
         self.robotjoints = rospy.Subscriber('/joint1_controller/state', dynamixel_msgs.msg.JointState, self.end_effector_callback, queue_size=1)
@@ -32,33 +42,28 @@ class Release():
         rospy.sleep(0.2)
         self.zero_pos = self.position
 
-
-        run = True
-        count = 0
-
         wv = WheelVelCmd()
-        WRIST_UP = 0
-        WRIST_DOWN = 1
+        run = True
 
         while (not rospy.is_shutdown()) and run:
-            #print count
-            if count >= 3:
-                run = False
-            
             if run:
-                self.move_wrist(WRIST_UP)   
-                self.run_distance(15, 20.0)
-                self.stop()
+                self.move_flipper(self.FLIPPER_DOWN_POS)
+                rospy.sleep(3)
+                self.move_flipper(self.FLIPPER_UP_POS)
+                rospy.sleep(1)
+                self.move_flipper(self.FLIPPER_UP_POS-.1)
+                rospy.sleep(.2)
+                self.move_flipper(self.FLIPPER_UP_POS)
+                rospy.sleep(.2)
+                self.move_flipper(self.FLIPPER_UP_POS-.1)
+                rospy.sleep(.2)
+                self.move_flipper(self.FLIPPER_UP_POS)
+                rospy.sleep(.2)
+                self.move_flipper(self.FLIPPER_DOWN_POS)
 
-                self.move_wrist(WRIST_DOWN)
-                self.run_distance(15, -20.0)
-                self.move_wrist(WRIST_UP)
-                self.stop()
 
+                #rospy.sleep(1)
                 run = False
-
-            
-            count +=1
 
         rospy.sleep(0.3)
     
@@ -66,8 +71,13 @@ class Release():
         self.velocity = data.velocity
         self.position = data.current_pos
         self.load = data.load
-        #self.current_pos = self.position-self.zero_pos
-        #print "something", self.velocity
+
+    def flipper_callback(self, data):
+        self.flipper_velocity = data.velocity
+        self.flipper_position = data.current_pos
+        self.flipper_load = data.load
+        self.flipper_is_moving = data.is_moving
+
     def stop(self):
         self.exec_joint1_pub.publish(std_msgs.msg.Float64(0))
 
@@ -96,13 +106,6 @@ class Release():
             increment = abs(self.position-last_pos)
             load_inc = abs(self.load - last_load)
             print "                         elapsed distance:", elapsed_distance
-            #print "check increment:", increment
-            # print "check load:", self.load, "load inc:", load_inc
-            # if load_inc > 0.3:
-            #     print "bad"
-            #     self.stop()
-            #     while 1:
-            #         pass
 
             if increment < 3.0:
                 elapsed_distance += increment
@@ -124,9 +127,16 @@ class Release():
 
         return 0
 
+    def move_flipper(self, position):
+        self.exec_joint2_pub.publish(std_msgs.msg.Float64(position))
+        while self.flipper_is_moving:
+            pass
+
+        return 0
+
 def main():
-    rospy.init_node("run_planning")
-    run_planning = RunPlanning()
+    rospy.init_node("release")
+    release = Release()
     rospy.spin()
 
 if __name__=="__main__":

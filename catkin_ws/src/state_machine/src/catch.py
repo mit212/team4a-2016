@@ -30,6 +30,9 @@ class Catch(State):
         self.catch_success = False
         self.current_input = current_input
 
+        self.WRIST_UP = 0
+        self.WRIST_DOWN = 1
+
         self.exec_joint1_pub = rospy.Publisher('/joint1_controller/command', std_msgs.msg.Float64, queue_size=1)
         self.robotjoints = rospy.Subscriber('/joint1_controller/state', dynamixel_msgs.msg.JointState, self.end_effector_callback, queue_size=1)
         self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
@@ -46,19 +49,17 @@ class Catch(State):
         run = True
 
         wv = WheelVelCmd()
-        WRIST_UP = 0
-        WRIST_DOWN = 1
+
         while (not rospy.is_shutdown()) and (not self.catch_success):
             if not self.catch_success:
-                self.move_wrist(WRIST_UP)   
+                self.move_wrist(self.WRIST_UP)   
                 self.run_distance(15, 20.0)
                 self.stop()
 
-                self.move_wrist(WRIST_DOWN)
-                rospy.sleep(.5)
+                self.move_wrist(selfWRIST_DOWN)
                 self.run_distance(15, -20.0)
                 rospy.sleep(.5)
-                self.move_wrist(WRIST_UP)
+                self.move_wrist(self.WRIST_UP)
                 self.stop()
 
                 self.catch_success = True

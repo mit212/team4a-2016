@@ -4,10 +4,10 @@ joint2_controller:
         module: joint_position_controller
         type: JointPositionController
     joint_name: joint2
-    joint_speed: 0.3
+    joint_speed: 1
     motor:
-        id: 21
+        id: 31
         init: 2047
         min: 0
-        max: 4095
+        max: 2450
 
