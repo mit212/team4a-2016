@@ -11,7 +11,7 @@ class Start(State):
         self.can_start = True
     
     def next_input(self):
-        return 2
+        return 2.5
 
     def next_state(self):
         return Search(self.next_input())
@@ -21,3 +21,6 @@ class Start(State):
 
     def is_stop_state(self):
         return False
+
+    def __str__(self):
+        return "Start(%s)" % (self.current_input)

@@ -28,10 +28,14 @@ class DetectObstacles(State):
         rospy.sleep(1)
         field_has_far_obstacles = self.determine_obstacles()
 
+        print "far obstacles:", field_has_far_obstacles
+
         rospy.set_param("field_has_far_obstacles", field_has_far_obstacles)
 
+        self.classified_obstacles = False
+
     def run(self):
-        pass
+        self.classified_obstacles = True
 
     def next_input(self):
         return 0
@@ -40,7 +44,7 @@ class DetectObstacles(State):
         return search.Search(self.next_input())
 
     def is_finished(self):
-        return True
+        return self.classified_obstacles
 
     def is_stop_state(self):
         return False
@@ -55,9 +59,11 @@ class DetectObstacles(State):
         relevant_obstacles = self.obstacles[-5:]
         far_obs_count = 0
         near_obs_count = 0
-        print relevant_obstacles
         for obstacle in relevant_obstacles:
             if obstacle.center_x >= 165 and obstacle.center_x <= 200 and obstacle.center_y >= 360 and obstacle.center_y <= 390:
                 if obstacle.width >= 350 and obstacle.height >= 170:
                     return True
         return False
+
+    def __str__(self):
+        return "DetectObstacles(%s)" % (self.current_input)

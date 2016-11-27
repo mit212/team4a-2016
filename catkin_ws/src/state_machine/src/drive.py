@@ -177,6 +177,9 @@ class Drive(State):
             
             rospy.sleep(.01)
 
+    def __str__(self):
+        return "Drive(%s)" % (self.current_input)
+
 class Pose2D():
     def __init__(self, x, y, theta):
         self.x = x
