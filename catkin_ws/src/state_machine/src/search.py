@@ -52,6 +52,7 @@ class Search(State):
             wv.desiredWV_L = -0.05
 
         self.velcmd_pub.publish(wv)
+        rospy.sleep(.01)
     
     def next_input(self):
         return self.current_input # maybe change later

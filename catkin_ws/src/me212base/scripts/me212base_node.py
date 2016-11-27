@@ -31,9 +31,8 @@ class Arduino():
         self.prevtime = rospy.Time.now()
         
         self.velcmd_sub = rospy.Subscriber("/cmdvel", WheelVelCmd, self.cmdvel)
-        
 
-    def cmdvel(self, msg):  
+    def cmdvel(self, msg):
         self.comm.write("%f,%f\n" % (msg.desiredWV_R, msg.desiredWV_L))
     
     # loop() is for reading odometry from Arduino and publish to rostopic.
