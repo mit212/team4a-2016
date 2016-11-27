@@ -207,7 +207,7 @@ def rosDistCallBack(rgb_data, depth_data):
 
         cv2.rectangle(cv_image,(xp,yp),(xp+w,yp+h),[0,255,255],2)
         
-        showPyramid(center_x, center_y, center_z, w, h)
+        #showPyramid(center_x, center_y, center_z, w, h)
         
 # Task 3 callback
 def rosRGBDCallBack(rgb_data, depth_data):

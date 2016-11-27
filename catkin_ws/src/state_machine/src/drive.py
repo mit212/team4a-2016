@@ -44,12 +44,11 @@ class Drive(State):
         self.current_target = self.target_pose_list[0]
         self.current_target_index = 0
 
-        print self.far_obstacles
+        self.prev_pos_x = []
+        self.prev_pos_y = []
         
     def run(self):
         apriltag_source_frame = '/apriltag' + str(self.current_input)
-
-        print apriltag_source_frame
 
         if self.current_input in self.tags_in_view:
             poselist_tag_cam = helper.pose2poselist(self.detection_poses[self.current_input])
@@ -72,7 +71,7 @@ class Drive(State):
         return 8
 
     def next_state(self):
-        if self.current_input == 0 or self.current_input == 6:
+        if self.current_input == 0: # or self.current_input == 6:
             return search.Search(self.next_input())
         return Stop(self.next_input())
 
@@ -107,8 +106,8 @@ class Drive(State):
 
         if not rospy.is_shutdown():
             print '1. Tag not in view, Stop'
-            wv.desiredWV_R = -0.05  # right, left
-            wv.desiredWV_L = 0.05
+            wv.desiredWV_R = 0.0 #-0.05  # right, left
+            wv.desiredWV_L = 0.0 #0.05
             self.velcmd_pub.publish(wv)
 
         rospy.sleep(.01)
@@ -131,7 +130,20 @@ class Drive(State):
                 self.velcmd_pub.publish(wv)  
                 return
             
-            robot_position2d = robot_pose3d[0:2]
+            if len(self.prev_pos_x) < 3:
+                self.prev_pos_x.append(robot_pose3d[0])
+            else:
+                self.prev_pos_x = self.prev_pos_x[1:] + [robot_pose3d[0]]
+
+            if len(self.prev_pos_y) < 3:
+                self.prev_pos_y.append(robot_pose3d[1])
+            else:
+                self.prev_pos_y = self.prev_pos_y[1:] + [robot_pose3d[1]]
+
+            print self.prev_pos_x
+            print self.prev_pos_y
+
+            robot_position2d = [sum(self.prev_pos_x) / len(self.prev_pos_x), sum(self.prev_pos_y) / len(self.prev_pos_y)]
             target_position2d = target_pose2d.pose_list[0:2]
             
             robot_yaw = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]
@@ -147,27 +159,67 @@ class Drive(State):
             robot_heading_vec = np.array([np.cos(robot_yaw), np.sin(robot_yaw)])
             heading_err_cross = helper.cross2d( robot_heading_vec, pos_delta / np.linalg.norm(pos_delta) )
             
-            # print 'robot_position2d', robot_position2d, 'target_position2d', target_position2d
-            # print 'pos_delta', pos_delta
-            # print 'robot_yaw', robot_yaw
-            # print 'norm delta', np.linalg.norm( pos_delta ), 'diffrad', diffrad(robot_yaw, target_pose2d.theta)
-            # print 'heading_err_cross', heading_err_cross
+            pos_delta_unit_vec = pos_delta / np.linalg.norm(pos_delta)
 
-            # TODO: clean up all these magic numbers
+            robot_target_angle = np.arccos(np.clip(np.dot(robot_heading_vec, pos_delta_unit_vec), -1.0, 1.0))
+            robot_orientation_angle = helper.diffrad(robot_yaw, target_pose2d.theta)
 
+            print 'robot_position2d', robot_position2d, 'target_position2d', target_position2d
+            print 'pos_delta', pos_delta
+            print 'robot_yaw', robot_yaw
+            print 'norm delta', np.linalg.norm( pos_delta ), 'diffrad', np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta))
+            print 'heading_err_cross', heading_err_cross
+            print 'robot_target_angle', robot_target_angle
+            
+            distance_error = 0.08
+            angle_error = 0.1
+
+            k_straight =  np.linalg.norm(pos_delta)
+            k_turn_target = robot_target_angle
+            k_turn_orientation = robot_orientation_angle
+
+
+            if target_pose2d.arrived or np.linalg.norm(pos_delta) < distance_error and np.fabs(robot_orientation_angle) < angle_error:
+                print 'Arrived at target, stopping'
+                wv.desiredWV_R = 0  
+                wv.desiredWV_L = 0
+                target_pose2d.arrived = True
+            elif not target_pose2d.arrived_position and np.fabs(robot_target_angle) > angle_error:
+                print 'Turning towards target'
+                mult = heading_err_cross / np.fabs(heading_err_cross)
+                wv.desiredWV_R = 0.35 * k_turn_target * mult
+                wv.desiredWV_L = -0.35 * k_turn_target * mult
+            elif not target_pose2d.arrived_position and np.linalg.norm(pos_delta) > distance_error:
+                print 'Driving towards target'
+                wv.desiredWV_R = min(0.3 * k_straight, 0.12)
+                wv.desiredWV_L = min(0.3 * k_straight, 0.12)
+            else:
+                print 'Turning towards orientation'
+                mult = robot_orientation_angle / np.fabs(robot_orientation_angle)
+                wv.desiredWV_R = -0.1 * k_turn_orientation * mult
+                wv.desiredWV_L = 0.1 * k_turn_orientation * mult
+                target_pose2d.arrived_position = True
+
+            print
             # TODO: replace with real controller
 
+            '''
             k = np.linalg.norm(pos_delta)
             print k
             # print "k", k
             # print "other", np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta))
 
-            if target_pose2d.arrived or k < 0.4 and np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta)) < 0.08:
+            # general strategy:
+            # turn towards target point
+            # drive straight to target point
+            # turn towards final orientation
+
+            if target_pose2d.arrived or k < 0.4 and np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta)) < 0.05:
                 print 'Case 2.1 Stop'
                 wv.desiredWV_R = 0  
                 wv.desiredWV_L = 0
                 target_pose2d.arrived = True
-            elif target_pose2d.arrived_position or np.fabs( heading_err_cross ) < 0.3:
+            elif not target_pose2d.arrived_position or np.fabs( heading_err_cross ) > 0.3:
                 print 'Case 2.2 Straight forward'
                 wv.desiredWV_R = 0.1 * k
                 wv.desiredWV_L = 0.1 * k
@@ -179,10 +231,11 @@ class Drive(State):
                 mult = heading_err_cross / np.fabs(heading_err_cross)
                 wv.desiredWV_R = 0.1 * k * mult * 0.5
                 wv.desiredWV_L = -0.1 * k * mult * 0.5
-                    
-            self.velcmd_pub.publish(wv)  
+            ''' 
+
+            self.velcmd_pub.publish(wv)
             
-            rospy.sleep(.01)
+            rospy.sleep(0.15)
 
     def __str__(self):
         return "Drive(%s)" % (self.current_input)
