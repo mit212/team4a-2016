@@ -58,13 +58,8 @@ cmd "3.3-apriltags" {
     host = "localhost";
 }
 
-cmd "3.4.1-robotbase" {
+cmd "3.4-robotbase" {
     exec = "rosrun me212base me212base_node.py";
-    host = "localhost";
-}
-
-cmd "3.4.2-me212bot" {
-    exec = "rosrun me212bot me212bot_node.py";
     host = "localhost";
 }
 
@@ -121,7 +116,7 @@ script "run-apriltag-navi" {
     start cmd "3.1.2-tf-cam-robotbase";
     start cmd "3.2.2-apriltag-tf";
     start cmd "3.3-apriltags";
-    start cmd "3.4.1-robotbase";
+    start cmd "3.4-robotbase";
     start cmd "3.5-navigation";
     start cmd "3.6.1-kinect";
 }
@@ -172,7 +167,7 @@ script "run-state-machine" {
     start cmd "3.2.1-camera-tf";
     start cmd "3.2.2-apriltag-tf";
     start cmd "3.3-apriltags";
-    start cmd "3.4.2-me212bot";
+    start cmd "3.4-robotbase";
     start cmd "3.6.1-kinect";
     start cmd "5-object-detection";
     start cmd "6-state-machine";

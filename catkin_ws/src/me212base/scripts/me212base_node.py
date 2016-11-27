@@ -11,11 +11,11 @@ import serial
 import pdb
 import traceback
 import sys
-import helper
 
 from visualization_msgs.msg import Marker
 from me212base.msg import WheelVelCmd
 from geometry_msgs.msg import Point, Pose, Twist
+import me212helper.helper as helper
 
 port = '/dev/ttyACM0'
 
@@ -30,7 +30,7 @@ class Arduino():
         
         self.prevtime = rospy.Time.now()
         
-        self.velcmd_sub = rospy.Subscriber("cmdvel", WheelVelCmd, self.cmdvel)
+        self.velcmd_sub = rospy.Subscriber("/cmdvel", WheelVelCmd, self.cmdvel)
         
 
     def cmdvel(self, msg):  
@@ -51,7 +51,6 @@ class Arduino():
                 theta = float(splitData[2]);
                 hz    = 1.0 / (rospy.Time.now().to_sec() - self.prevtime.to_sec())
                 
-                cnt += 1
                 print 'x=', x, ' y=', y, ' theta =', theta, ' hz =', hz; 
                     
                 self.prevtime = rospy.Time.now()
