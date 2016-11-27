@@ -14,6 +14,7 @@ import me212helper.helper as helper
 
 from state import State
 from stop import Stop
+import search
 
 class Drive(State):
     def __init__(self, current_input):
@@ -22,7 +23,8 @@ class Drive(State):
         self.current_input = current_input
 
         self.arrived = False
-        self.far_obstacles = rospy.get_param("field_has_far_obstacles")
+        #self.far_obstacles = rospy.get_param("field_has_far_obstacles")
+        self.far_obstacles = False
 
         self.tags_in_view = []
         self.detection_poses = {}
@@ -47,16 +49,15 @@ class Drive(State):
     def run(self):
         apriltag_source_frame = '/apriltag' + str(self.current_input)
 
+        print apriltag_source_frame
+
         if self.current_input in self.tags_in_view:
             poselist_tag_cam = helper.pose2poselist(self.detection_poses[self.current_input])
             pose_tag_base = helper.transformPose(pose = poselist_tag_cam,  sourceFrame = '/camera', targetFrame = '/robot_base', lr = self.listener)
             poselist_base_tag = helper.invPoselist(pose_tag_base)
             pose_base_map = helper.transformPose(pose = poselist_base_tag, sourceFrame = apriltag_source_frame, targetFrame = '/map', lr = self.listener)
             helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/robot_base', parent_frame_id = '/map', npub = 1)
-            #print self.current_target
-            #print "before", self.current_target.arrived
             self.drive(self.current_target)
-            #print "after", self.current_target.arrived
             if self.current_target.arrived:
                 if self.current_target_index == len(self.target_pose_list) - 1:
                     self.arrived = True
@@ -67,11 +68,12 @@ class Drive(State):
             self.stop()
     
     def next_input(self):
-        return 2 # change later
+        #return 2 # change later
+        return 8
 
     def next_state(self):
-        if self.current_input == 0:
-            return Search(self.next_input())
+        if self.current_input == 0 or self.current_input == 6:
+            return search.Search(self.next_input())
         return Stop(self.next_input())
 
     def is_finished(self):
@@ -88,6 +90,10 @@ class Drive(State):
             if self.far_obstacles:
                 return [Pose2D(0.15, 0.3, np.pi/2), Pose2D(0.75, 0.9, 0)]
             return [Pose2D(.15, 0.3, np.pi/2), Pose2D(0.25, 1.5, np.pi/2)]
+        elif self.current_input == 6:
+            return [Pose2D(3.05, 1.7, 0)]
+        elif self.current_input == 8:
+            return [Pose2D(3.05, 1.1, -np.pi/2)]
         return [Pose2D(0, 0, 0)]
 
     def apriltag_callback(self, data):
@@ -101,8 +107,8 @@ class Drive(State):
 
         if not rospy.is_shutdown():
             print '1. Tag not in view, Stop'
-            wv.desiredWV_R = 0  # right, left
-            wv.desiredWV_L = 0
+            wv.desiredWV_R = -0.05  # right, left
+            wv.desiredWV_L = 0.05
             self.velcmd_pub.publish(wv)
 
         rospy.sleep(.01)
@@ -117,10 +123,11 @@ class Drive(State):
             # 1. get robot pose
             robot_pose3d = helper.lookupTransform(self.listener, '/map', '/robot_base')
             
+            # this should never happen
             if robot_pose3d is None:
                 print '1. Tag not in view, Stop'
-                wv.desiredWV_R = 0  # right, left
-                wv.desiredWV_L = 0
+                wv.desiredWV_R = 0.0  # right, left
+                wv.desiredWV_L = 0.0
                 self.velcmd_pub.publish(wv)  
                 return
             
@@ -155,23 +162,23 @@ class Drive(State):
             # print "k", k
             # print "other", np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta))
 
-            if target_pose2d.arrived or k < 0.4 and np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta)) < 0.2:
+            if target_pose2d.arrived or k < 0.4 and np.fabs(helper.diffrad(robot_yaw, target_pose2d.theta)) < 0.08:
                 print 'Case 2.1 Stop'
                 wv.desiredWV_R = 0  
                 wv.desiredWV_L = 0
                 target_pose2d.arrived = True
             elif target_pose2d.arrived_position or np.fabs( heading_err_cross ) < 0.3:
                 print 'Case 2.2 Straight forward'
-                wv.desiredWV_R = 0.1 * k * 1.5
-                wv.desiredWV_L = 0.1 * k * 1.5
+                wv.desiredWV_R = 0.1 * k
+                wv.desiredWV_L = 0.1 * k
             else:
                 print 'Case 2.1 Turning'
                 if k < 0.4:
                     target_pose2d.arrived_position = True
                 print k
                 mult = heading_err_cross / np.fabs(heading_err_cross)
-                wv.desiredWV_R = 0.1 * k * mult
-                wv.desiredWV_L = -0.1 * k * mult
+                wv.desiredWV_R = 0.1 * k * mult * 0.5
+                wv.desiredWV_L = -0.1 * k * mult * 0.5
                     
             self.velcmd_pub.publish(wv)  
             

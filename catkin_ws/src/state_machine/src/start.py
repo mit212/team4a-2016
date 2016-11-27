@@ -11,7 +11,8 @@ class Start(State):
         self.can_start = True
     
     def next_input(self):
-        return 2.5
+        #return 2.5 # for actual thing
+        return 6 # for testing drive
 
     def next_state(self):
         return Search(self.next_input())
