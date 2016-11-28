@@ -1,5 +1,6 @@
 from state import State
 from search import Search
+from prepare_box import PrepareToCatchBox
 
 class Start(State):
     def __init__(self, current_input):
@@ -12,10 +13,10 @@ class Start(State):
     
     def next_input(self):
         #return 2.5 # for actual thing
-        return 6 # for testing drive
+        return 0 # for testing drive
 
     def next_state(self):
-        return Search(self.next_input())
+        return PrepareToCatchBox(self.next_input())
 
     def is_finished(self):
         return self.can_start
