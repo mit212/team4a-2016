@@ -25,7 +25,7 @@ class DetectObstacles(State):
         self.obstacles = []
         
         self.object_sub = rospy.Subscriber("/object_info", DetectedObject, self.obstacle_callback, queue_size = 1)
-        rospy.sleep(1)
+        rospy.sleep(3)
         field_has_far_obstacles = self.determine_obstacles()
 
         print "far obstacles:", field_has_far_obstacles
@@ -51,16 +51,17 @@ class DetectObstacles(State):
 
     def obstacle_callback(self,data):
         # want to add datapoints with significant width/height
-        if data.width >= 75 and data.height >= 75:
+        if data.width >= 120 and data.height >= 120:
             self.obstacles.append(data)
     
     # probably add in distance, too
     def determine_obstacles(self):
         relevant_obstacles = self.obstacles[-5:]
+        print relevant_obstacles
         far_obs_count = 0
         near_obs_count = 0
         for obstacle in relevant_obstacles:
-            if obstacle.center_x >= 165 and obstacle.center_x <= 200 and obstacle.center_y >= 360 and obstacle.center_y <= 390:
+            if obstacle.center_x >= 165 and obstacle.center_x <= 260 and obstacle.center_y >= 320 and obstacle.center_y <= 390:
                 if obstacle.width >= 350 and obstacle.height >= 170:
                     return True
         return False

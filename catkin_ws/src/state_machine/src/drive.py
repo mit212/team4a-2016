@@ -130,12 +130,12 @@ class Drive(State):
                 self.velcmd_pub.publish(wv)  
                 return
             
-            if len(self.prev_pos_x) < 3:
+            if len(self.prev_pos_x) < 10:
                 self.prev_pos_x.append(robot_pose3d[0])
             else:
                 self.prev_pos_x = self.prev_pos_x[1:] + [robot_pose3d[0]]
 
-            if len(self.prev_pos_y) < 3:
+            if len(self.prev_pos_y) < 10:
                 self.prev_pos_y.append(robot_pose3d[1])
             else:
                 self.prev_pos_y = self.prev_pos_y[1:] + [robot_pose3d[1]]
@@ -143,7 +143,7 @@ class Drive(State):
             print self.prev_pos_x
             print self.prev_pos_y
 
-            robot_position2d = [sum(self.prev_pos_x) / len(self.prev_pos_x), sum(self.prev_pos_y) / len(self.prev_pos_y)]
+            robot_position2d = [self.kalman_filter(self.prev_pos_x), self.kalman_filter(self.prev_pos_y)]
             target_position2d = target_pose2d.pose_list[0:2]
             
             robot_yaw = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]
@@ -174,10 +174,11 @@ class Drive(State):
             distance_error = 0.08
             angle_error = 0.1
 
-            k_straight =  np.linalg.norm(pos_delta)
-            k_turn_target = robot_target_angle
-            k_turn_orientation = robot_orientation_angle
+            k_straight =  0.3
+            k_turn_target = 0.1
+            k_turn_orientation = 0.1
 
+            max_speed = 0.12
 
             if target_pose2d.arrived or np.linalg.norm(pos_delta) < distance_error and np.fabs(robot_orientation_angle) < angle_error:
                 print 'Arrived at target, stopping'
@@ -187,17 +188,17 @@ class Drive(State):
             elif not target_pose2d.arrived_position and np.fabs(robot_target_angle) > angle_error:
                 print 'Turning towards target'
                 mult = heading_err_cross / np.fabs(heading_err_cross)
-                wv.desiredWV_R = 0.35 * k_turn_target * mult
-                wv.desiredWV_L = -0.35 * k_turn_target * mult
+                wv.desiredWV_R = k_turn_target * robot_target_angle * mult
+                wv.desiredWV_L = -k_turn_target * robot_target_angle * mult
             elif not target_pose2d.arrived_position and np.linalg.norm(pos_delta) > distance_error:
                 print 'Driving towards target'
-                wv.desiredWV_R = min(0.3 * k_straight, 0.12)
-                wv.desiredWV_L = min(0.3 * k_straight, 0.12)
+                wv.desiredWV_R = min(k_straight * np.linalg.norm(pos_delta), max_speed)
+                wv.desiredWV_L = min(k_straight * np.linalg.norm(pos_delta), max_speed)
             else:
                 print 'Turning towards orientation'
                 mult = robot_orientation_angle / np.fabs(robot_orientation_angle)
-                wv.desiredWV_R = -0.1 * k_turn_orientation * mult
-                wv.desiredWV_L = 0.1 * k_turn_orientation * mult
+                wv.desiredWV_R = -k_turn_orientation * robot_orientation_angle * mult
+                wv.desiredWV_L = k_turn_orientation * robot_orientation_angle * mult
                 target_pose2d.arrived_position = True
 
             print
@@ -235,7 +236,39 @@ class Drive(State):
 
             self.velcmd_pub.publish(wv)
             
-            rospy.sleep(0.15)
+            rospy.sleep(0.02)
+
+    def kalman_filter(self, z):
+        # intial parameters
+        n_iter = len(z)
+        sz = (n_iter,)
+
+        Q = 1e-5 # process variance
+
+        # allocate space for arrays
+        xhat=np.zeros(sz)      # a posteri estimate of x
+        P=np.zeros(sz)         # a posteri error estimate
+        xhatminus=np.zeros(sz) # a priori estimate of x
+        Pminus=np.zeros(sz)    # a priori error estimate
+        K=np.zeros(sz)         # gain or blending factor
+
+        R = 0.15**2 # estimate of measurement variance, change to see effect
+
+        # intial guesses
+        xhat[0] = z[0]
+        P[0] = z[0] + 0.1 # estimate we're 10 cm away from our initial guess
+
+        for k in range(1,n_iter):
+            # time update
+            xhatminus[k] = xhat[k-1]
+            Pminus[k] = P[k-1]+Q
+
+            # measurement update
+            K[k] = Pminus[k]/( Pminus[k]+R )
+            xhat[k] = xhatminus[k]+K[k]*(z[k]-xhatminus[k])
+            P[k] = K[k]*Pminus[k]
+
+        return Pminus[-1]
 
     def __str__(self):
         return "Drive(%s)" % (self.current_input)

@@ -153,8 +153,8 @@ def distanceObjectDetection(cv_depthimage):
     # closest: 6 in = 0.154 m
     # middle obstacles: 25 in = 0.635 m
     # farthest obstacles: 37 in = 0.94 m
-    lower_dist = 0.51
-    upper_dist = 0.56
+    lower_dist = 0.52 #0.50 #0.3 #0.51
+    upper_dist = 0.57 #0.55 #2.0 #0.56
 
     # Threshold the image to only include objects within the specified distance
     mask = cv2.inRange(cv_depthimage, lower_dist, upper_dist)

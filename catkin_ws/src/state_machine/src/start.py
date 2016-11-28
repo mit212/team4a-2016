@@ -13,10 +13,10 @@ class Start(State):
     
     def next_input(self):
         #return 2.5 # for actual thing
-        return 0 # for testing drive
+        return 6 # for testing drive
 
     def next_state(self):
-        return PrepareToCatchBox(self.next_input())
+        return Search(self.next_input())
 
     def is_finished(self):
         return self.can_start
