@@ -13,7 +13,7 @@ import traceback
 import sys
 
 from visualization_msgs.msg import Marker
-from me212base.msg import WheelVelCmd
+from me212base.msg import WheelVelCmd, ArduinoData
 from geometry_msgs.msg import Point, Pose, Twist
 import me212helper.helper as helper
 
@@ -31,6 +31,7 @@ class Arduino():
         self.prevtime = rospy.Time.now()
         
         self.velcmd_sub = rospy.Subscriber("/cmdvel", WheelVelCmd, self.cmdvel)
+        self.arduino_data_pub = rospy.Publisher("/arduino_data", ArduinoData, queue_size = 1)
 
     def cmdvel(self, msg):  
         self.comm.write("%f,%f,%f,\n" % (msg.desiredWV_R, msg.desiredWV_L, msg.desiredWrist))
@@ -50,10 +51,19 @@ class Arduino():
                 x     = float(splitData[0])
                 y     = float(splitData[1])
                 theta = float(splitData[2])
-                isSafe = float(splitData[3])
-                wristBumperState = float(splitData[4])
+                isSafe = int(splitData[3])
+                wristBumperState = int(splitData[4])
                 hz    = 1.0 / (rospy.Time.now().to_sec() - self.prevtime.to_sec())
-                
+
+                ad = ArduinoData()
+                ad.deltaX = x
+                ad.deltaY = y
+                ad.deltaTheta = theta
+                ad.hertz = hz
+                ad.isSafe = isSafe
+                ad.wristBumperState = wristBumperState
+                self.arduino_data_pub.publish(ad)
+
                 print 'x=', x, ' y=', y, ' theta =', theta, ' hz =', hz, ' isSafe =', isSafe, ' wristBumperState =', wristBumperState; 
                     
                 self.prevtime = rospy.Time.now()

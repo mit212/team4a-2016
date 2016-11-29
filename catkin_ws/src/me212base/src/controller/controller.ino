@@ -23,8 +23,8 @@ unsigned long       prevTime = 0;
 boolean usePathPlanner = true;
 boolean userState = true;
 boolean bumperState = false;
-boolean wristBumperState = false;
-boolean isSafe = true;
+//serialComm.wristBumperState = false;
+//serialComm.isSafe = true;
 
 float wristState = 0; 
 
@@ -56,17 +56,17 @@ void loop() {
 
     //read the limit switches
     userState = digitalRead(userPin);
-    wristBumperState = digitalRead(wristBumperPin);
+    serialComm.wristBumperState = digitalRead(wristBumperPin);
     bumperState = digitalRead(bumperPin);
     
     //if either bumper switch has been pressed, it is not safe to move.
     if (bumperState == BUMPER_PRESSED){
-      isSafe = false;
+      serialComm.isSafe = false;
     }
 
     //if it has been not safe to move, but the user switch is pressed, then it is safe to move again
-    if ((isSafe == false) && (userState == USER_PRESSED)){
-      isSafe = true;
+    if ((serialComm.isSafe == false) && (userState == USER_PRESSED)){
+      serialComm.isSafe = true;
     }
     
     /*Serial.print("isSafe ");
@@ -88,7 +88,7 @@ void loop() {
         //update wristState
         wristState = serialComm.desiredWrist;
 
-        if (isSafe) {
+        if (serialComm.isSafe) {
           // 4. Send the velocity command to wheel velocity controller
           wheelVelCtrl.doPIControl("Left",  serialComm.desiredWV_L, encoder.v_L); 
           wheelVelCtrl.doPIControl("Right", serialComm.desiredWV_R, encoder.v_R);        

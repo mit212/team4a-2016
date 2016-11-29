@@ -89,7 +89,7 @@ class SerialComm {
 
     boolean bumperState, userState, isSafe, wristBumperState;
     
-    SerialComm(): desiredWV_R(0), desiredWV_L(0), desiredWrist(0){
+    SerialComm(): desiredWV_R(0), desiredWV_L(0), desiredWrist(0), isSafe(true), wristBumperState(false){
         prevSerialTime = micros();
     }
     void receiveSerialData(){
