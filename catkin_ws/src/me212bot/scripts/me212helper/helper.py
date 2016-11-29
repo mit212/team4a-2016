@@ -31,6 +31,7 @@ def pubFrame(br, pose=[0,0,0,0,0,0,1], frame_id='obj', parent_frame_id='map', np
     pos = tuple(pose[0:3])
     
     for j in range(npub):
+        print 'sending'
         br.sendTransform(pos, ori, rospy.Time.now(), frame_id, parent_frame_id)
         rospy.sleep(0.01)
 
@@ -38,11 +39,13 @@ def lookupTransform(lr, sourceFrame, targetFrame):
     for i in range(nTfRetry):
         try:
             t = rospy.Time(0)
+            #lr.waitForTransform(sourceFrame, targetFrame, rospy.Time.now(), rospy.Duration(4.0))
             (trans,rot) = lr.lookupTransform(sourceFrame, targetFrame, t)
             if lr.getLatestCommonTime(sourceFrame, targetFrame) < (rospy.Time.now() - rospy.Duration(1)):
                 return None
             return list(trans) + list(rot)
-        except:
+        except Exception as e:
+            print e
             print '[lookupTransform] failed to transform targetFrame %s sourceFrame %s, retry %d' % (targetFrame, sourceFrame, i)
             rospy.sleep(retryTime)
     return None

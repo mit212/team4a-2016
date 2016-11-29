@@ -1,0 +1,30 @@
+digraph G {
+"base_link" -> "camera"[label="Broadcaster: /tf2\nAverage rate: 99.373 Hz\nMost recent transform: 1479589313.298 ( -0.009 sec old)\nBuffer length: 4.991 sec\n"];
+"link2" -> "tcp"[label="Broadcaster: /robot_state_publisher\nAverage rate: 50.203 Hz\nMost recent transform: 1479589313.778 ( -0.489 sec old)\nBuffer length: 4.980 sec\n"];
+"robot_base" -> "arm_base"[label="Broadcaster: /robot_state_publisher\nAverage rate: 50.203 Hz\nMost recent transform: 1479589313.778 ( -0.489 sec old)\nBuffer length: 4.980 sec\n"];
+"map" -> "robot_base"[label="Broadcaster: /static_transform_publisher_1479588754191418998\nAverage rate: 10.196 Hz\nMost recent transform: 1479589313.340 ( -0.052 sec old)\nBuffer length: 4.904 sec\n"];
+"map" -> "apriltag"[label="Broadcaster: /tf1\nAverage rate: 99.361 Hz\nMost recent transform: 1479589313.289 ( -0.000 sec old)\nBuffer length: 4.972 sec\n"];
+"map" -> "apriltag8"[label="Broadcaster: /tag8\nAverage rate: 10.195 Hz\nMost recent transform: 1479589313.317 ( -0.029 sec old)\nBuffer length: 4.904 sec\n"];
+"map" -> "apriltag7"[label="Broadcaster: /tag7\nAverage rate: 10.195 Hz\nMost recent transform: 1479589313.320 ( -0.032 sec old)\nBuffer length: 4.904 sec\n"];
+"map" -> "apriltag9"[label="Broadcaster: /tag9\nAverage rate: 10.197 Hz\nMost recent transform: 1479589313.323 ( -0.035 sec old)\nBuffer length: 4.904 sec\n"];
+"map" -> "apriltag10"[label="Broadcaster: /tag10\nAverage rate: 10.196 Hz\nMost recent transform: 1479589313.326 ( -0.038 sec old)\nBuffer length: 4.904 sec\n"];
+"map" -> "apriltag0"[label="Broadcaster: /tag0\nAverage rate: 10.195 Hz\nMost recent transform: 1479589313.341 ( -0.052 sec old)\nBuffer length: 4.905 sec\n"];
+"map" -> "apriltag1"[label="Broadcaster: /tag1\nAverage rate: 10.195 Hz\nMost recent transform: 1479589313.360 ( -0.072 sec old)\nBuffer length: 4.904 sec\n"];
+"map" -> "apriltag2"[label="Broadcaster: /tag2\nAverage rate: 10.196 Hz\nMost recent transform: 1479589313.370 ( -0.081 sec old)\nBuffer length: 4.904 sec\n"];
+"map" -> "apriltag5"[label="Broadcaster: /tag5\nAverage rate: 10.196 Hz\nMost recent transform: 1479589313.387 ( -0.098 sec old)\nBuffer length: 4.904 sec\n"];
+"map" -> "apriltag4"[label="Broadcaster: /tag4\nAverage rate: 10.201 Hz\nMost recent transform: 1479589313.288 ( 0.000 sec old)\nBuffer length: 4.804 sec\n"];
+"map" -> "apriltag6"[label="Broadcaster: /tag6\nAverage rate: 10.201 Hz\nMost recent transform: 1479589313.290 ( -0.001 sec old)\nBuffer length: 4.803 sec\n"];
+"map" -> "apriltag3"[label="Broadcaster: /tag3\nAverage rate: 10.201 Hz\nMost recent transform: 1479589313.292 ( -0.004 sec old)\nBuffer length: 4.803 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1479589313.289"[ shape=plaintext ] ;
+ }->"base_link";
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1479589313.289"[ shape=plaintext ] ;
+ }->"link2";
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1479589313.289"[ shape=plaintext ] ;
+ }->"map";
+}

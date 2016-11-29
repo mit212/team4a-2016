@@ -3,8 +3,7 @@
 <launch>
     
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
-    
-    <param name="robot_description" command="$(find xacro)/xacro.py $(find me212bot)/model/me212bot.xacro"/>
 
+    <param name="robot_description" command="$(find xacro)/xacro.py $(find me212bot)/model/my_assembly.xacro"/>
 
 </launch>
