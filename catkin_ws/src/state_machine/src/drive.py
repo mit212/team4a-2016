@@ -114,6 +114,7 @@ class Drive(State):
             print '1. Tag not in view, Stop'
             wv.desiredWV_R = -0.1 #-0.05  # right, left
             wv.desiredWV_L = 0.1 #0.05
+            wv.desiredWrist = 0.0
             self.velcmd_pub.publish(wv)
 
         rospy.sleep(.01)
@@ -246,6 +247,7 @@ class Drive(State):
                 wv.desiredWV_L = -0.1 * k * mult * 0.5
             ''' 
 
+            wv.desiredWrist = 0.0
             self.velcmd_pub.publish(wv)
             
             self.count += 1

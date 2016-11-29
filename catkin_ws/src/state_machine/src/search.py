@@ -42,6 +42,7 @@ class Search(State):
             wv.desiredWV_R = 0.05  # right, left
             wv.desiredWV_L = -0.05
 
+        wv.desiredWrist = 0.0
         self.velcmd_pub.publish(wv)
         rospy.sleep(.01)
     
