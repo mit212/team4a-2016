@@ -38,7 +38,7 @@ class DetectObstacles(State):
         self.classified_obstacles = True
 
     def next_input(self):
-        return 0
+        return 2
 
     def next_state(self):
         return search.Search(self.next_input())

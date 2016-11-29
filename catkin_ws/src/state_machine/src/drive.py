@@ -22,9 +22,11 @@ class Drive(State):
 
         self.current_input = current_input
 
+        self.count = 0
+
         self.arrived = False
-        #self.far_obstacles = rospy.get_param("field_has_far_obstacles")
-        self.far_obstacles = False
+        self.far_obstacles = rospy.get_param("field_has_far_obstacles")
+        #self.far_obstacles = False
 
         self.tags_in_view = []
         self.detection_poses = {}
@@ -40,13 +42,21 @@ class Drive(State):
             self.far_obstacles = True
             self.current_input = int(current_input)
 
+        ### Point list
+        self.point0 = Pose2D(0.32, 1.0, np.pi/2)
+        self.point2a = Pose2D(0.32, 1.22, np.pi/2) # y was 1.52
+        self.point2b = Pose2D(0.99, 1.36, np.pi/2)
+        self.point3 = Pose2D(1.57, 1.55, 4*np.pi/3)
+        self.point4 = Pose2D(0.99, 2.13, np.pi)
+
         self.target_pose_list = self.get_target_pose_list()
         self.current_target = self.target_pose_list[0]
         self.current_target_index = 0
 
         self.prev_pos_x = []
         self.prev_pos_y = []
-        
+        self.prev_yaw = []
+
     def run(self):
         apriltag_source_frame = '/apriltag' + str(self.current_input)
 
@@ -67,8 +77,8 @@ class Drive(State):
             self.stop()
     
     def next_input(self):
-        #return 2 # change later
-        return 8
+        return 2 # change later
+        #return 8
 
     def next_state(self):
         if self.current_input == 0: # or self.current_input == 6:
@@ -84,11 +94,12 @@ class Drive(State):
     ## update to include more input options
     def get_target_pose_list(self):
         if self.current_input == 0:
-            return [Pose2D(.15, 0.3, np.pi/2)]
+            return [self.point0]
         elif self.current_input == 2:
             if self.far_obstacles:
-                return [Pose2D(0.15, 0.3, np.pi/2), Pose2D(0.75, 0.9, 0)]
-            return [Pose2D(.15, 0.3, np.pi/2), Pose2D(0.25, 1.5, np.pi/2)]
+                return [self.point0, self.point2a]
+            #return [self.point0, self.point2b]
+            return [self.point0]
         elif self.current_input == 6:
             return [Pose2D(3.05, 1.7, 0)]
         elif self.current_input == 8:
@@ -106,8 +117,8 @@ class Drive(State):
 
         if not rospy.is_shutdown():
             print '1. Tag not in view, Stop'
-            wv.desiredWV_R = 0.0 #-0.05  # right, left
-            wv.desiredWV_L = 0.0 #0.05
+            wv.desiredWV_R = -0.1 #-0.05  # right, left
+            wv.desiredWV_L = 0.1 #0.05
             self.velcmd_pub.publish(wv)
 
         rospy.sleep(.01)
@@ -149,6 +160,12 @@ class Drive(State):
             robot_yaw = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]
             robot_pose2d = robot_position2d + [robot_yaw]
             
+            if len(self.prev_yaw) < 3:
+                self.prev_yaw.append(robot_yaw)
+            else:
+                self.prev_yaw = self.prev_yaw[1:] + [robot_yaw]
+
+            robot_yaw = sum(self.prev_yaw) / len(self.prev_yaw)
             # 2. navigation policy
             # 2.1 if       in the target, 
             # 2.2 else if  close to target position, turn to the target orientation
@@ -172,24 +189,26 @@ class Drive(State):
             print 'robot_target_angle', robot_target_angle
             
             distance_error = 0.08
-            angle_error = 0.1
+            angle_error = 0.05
 
-            k_straight =  0.3
-            k_turn_target = 0.1
+            k_straight =  0.2
+            k_turn_target = 0.3
             k_turn_orientation = 0.1
 
-            max_speed = 0.12
+            max_speed = 0.1
 
             if target_pose2d.arrived or np.linalg.norm(pos_delta) < distance_error and np.fabs(robot_orientation_angle) < angle_error:
                 print 'Arrived at target, stopping'
                 wv.desiredWV_R = 0  
                 wv.desiredWV_L = 0
                 target_pose2d.arrived = True
-            elif not target_pose2d.arrived_position and np.fabs(robot_target_angle) > angle_error:
+            elif not target_pose2d.aligned and not target_pose2d.arrived_position:
                 print 'Turning towards target'
                 mult = heading_err_cross / np.fabs(heading_err_cross)
                 wv.desiredWV_R = k_turn_target * robot_target_angle * mult
                 wv.desiredWV_L = -k_turn_target * robot_target_angle * mult
+                if np.fabs(robot_target_angle) < angle_error:
+                    target_pose2d.aligned = True
             elif not target_pose2d.arrived_position and np.linalg.norm(pos_delta) > distance_error:
                 print 'Driving towards target'
                 wv.desiredWV_R = min(k_straight * np.linalg.norm(pos_delta), max_speed)
@@ -236,6 +255,7 @@ class Drive(State):
 
             self.velcmd_pub.publish(wv)
             
+            self.count += 1
             rospy.sleep(0.02)
 
     def kalman_filter(self, z):
@@ -282,6 +302,7 @@ class Pose2D():
         self.pose_list = [x, y, theta]
 
         self.arrived = False
+        self.aligned = False
         self.arrived_position = False
 
     def __str__(self):
