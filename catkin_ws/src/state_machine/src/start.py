@@ -1,6 +1,10 @@
 from state import State
 from search import Search
+<<<<<<< HEAD
 from catch import Catch
+=======
+from prepare_box import PrepareToCatchBox
+>>>>>>> origin/integration_test
 
 class Start(State):
     def __init__(self, current_input):
@@ -12,7 +16,8 @@ class Start(State):
         self.can_start = True
     
     def next_input(self):
-        return 2
+        return 2.5 # for actual thing
+        #return 6 # for testing drive
 
     def next_state(self):
         return Catch(self.next_input())
@@ -22,3 +27,6 @@ class Start(State):
 
     def is_stop_state(self):
         return False
+
+    def __str__(self):
+        return "Start(%s)" % (self.current_input)

@@ -18,3 +18,6 @@ class Stop(State):
 
     def is_stop_state(self):
         return True
+
+    def __str__(self):
+        return "Stop(%s)" % (self.current_input)
