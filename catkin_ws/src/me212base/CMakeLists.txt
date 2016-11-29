@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   WheelVelCmd.msg
+  ArduinoData.msg
 )
 
 ## Generate services in the 'srv' folder
