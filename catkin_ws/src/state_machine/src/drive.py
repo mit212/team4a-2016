@@ -3,7 +3,7 @@ import numpy as np
 import tf
 import tf.transformations as tfm
 
-from me212base.msg import WheelVelCmd
+from me212base.msg import WheelVelCmd, ArduinoData
 from apriltags.msg import AprilTagDetections
 import me212helper.helper as helper
 
@@ -25,6 +25,7 @@ class Drive(State):
 
         self.tags_in_view = []
         self.detection_poses = {}
+        self.tag_centers = {}
         
         self.listener = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
@@ -32,6 +33,7 @@ class Drive(State):
         
         self.apriltag_sub = rospy.Subscriber("/apriltags/detections", AprilTagDetections, self.apriltag_callback, queue_size = 1)
         self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
+        self.arduino_data_sub = rospy.Subscriber("/arduino_data", ArduinoData, self.arduino_data_callback, queue_size = 3)
         
         if current_input - int(current_input) == 0.5:
             self.far_obstacles = True
@@ -52,24 +54,41 @@ class Drive(State):
         self.prev_pos_y = []
         self.prev_yaw = []
 
-    def run(self):
-        apriltag_source_frame = '/apriltag' + str(self.current_input)
+        self.enc_x = 0
+        self.enc_y = 0
+        self.enc_theta = 0
+        self.hertz = 0
+        self.is_safe = 0
+        self.wrist_bumper_state = 0
 
-        if self.current_input in self.tags_in_view:
-            poselist_tag_cam = helper.pose2poselist(self.detection_poses[self.current_input])
-            pose_tag_base = helper.transformPose(pose = poselist_tag_cam,  sourceFrame = '/camera', targetFrame = '/robot_base', lr = self.listener)
-            poselist_base_tag = helper.invPoselist(pose_tag_base)
-            pose_base_map = helper.transformPose(pose = poselist_base_tag, sourceFrame = apriltag_source_frame, targetFrame = '/map', lr = self.listener)
-            helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/robot_base', parent_frame_id = '/map', npub = 1)
-            self.drive(self.current_target)
-            if self.current_target.arrived:
-                if self.current_target_index == len(self.target_pose_list) - 1:
-                    self.arrived = True
-                    return
-                self.current_target_index += 1
-                self.current_target = self.target_pose_list[self.current_target_index]
-        else:
-            self.stop()
+        self.current_x, self.current_y, self.current_alpha = self.get_current_point()
+
+        self.x_threshold = 0.1
+        self.y_threshold = 0.1
+        self.alpha_threshold = 0.1
+
+        self.model_tolerance = 0.8
+
+        self.TURN_RIGHT = 1
+        self.TURN_LEFT = -self.TURN_RIGHT
+
+
+
+    def run(self):
+        if self.current_x == -1:
+            print "bad data"
+        else
+            self.drive_simple()
+
+        #     self.drive(self.current_target)
+        #     if self.current_target.arrived:
+        #         if self.current_target_index == len(self.target_pose_list) - 1:
+        #             self.arrived = True
+        #             return
+        #         self.current_target_index += 1
+        #         self.current_target = self.target_pose_list[self.current_target_index]
+        # else:
+        #     self.stop()
     
     def next_input(self):
         return 2 # change later
@@ -103,9 +122,55 @@ class Drive(State):
 
     def apriltag_callback(self, data):
         del self.tags_in_view[:]
+        corner_x = []
+        corner_y = []
         for detection in data.detections:
             self.tags_in_view.append(detection.id)
             self.detection_poses[detection.id] = detection.pose
+            for point in detection.corners2d:
+                corner_x.append(point.x)
+                corner_y.append(point.y)
+            center_x = sum(corner_x) / len(corner_x)
+            center_y = sum(corner_y) / len(corner_y)
+            self.tag_centers[detection.id].append((center_x, center_y))
+
+    def arduino_data_callback(self, data):
+        accum_x = []
+        accum_y = []
+        accum_theta = []
+
+        for data_point in data:
+            accum_x.append(data_point.deltaX)
+            accum_y.append(data_point.deltaY)    
+            accum_theta.append(data_point.deltaTheta)
+            self.is_safe = data_point.isSafe      
+            self.wrist_bumper_state = data_point.wristBumperState
+
+        self.enc_x = sum(accum_x)/len(accum_x)
+        self.enc_y = sum(accum_y)/len(accum_y)
+        self.enc_theta = sum(accum_theta)/len(accum_theta)
+
+    def get_current_point(self):
+        apriltag_source_frame = '/apriltag' + str(self.current_input)
+        try:
+            if self.current_input in self.tags_in_view:
+                poselist_tag_cam = helper.pose2poselist(self.detection_poses[self.current_input])
+                pose_tag_base = helper.transformPose(pose = poselist_tag_cam,  sourceFrame = '/camera', targetFrame = '/robot_base', lr = self.listener)
+                poselist_base_tag = helper.invPoselist(pose_tag_base)
+                pose_base_map = helper.transformPose(pose = poselist_base_tag, sourceFrame = apriltag_source_frame, targetFrame = '/map', lr = self.listener)
+                helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/robot_base', parent_frame_id = '/map', npub = 1)
+                robot_pose3d = helper.lookupTransform(self.listener, '/map', '/robot_base')
+
+                self.current_x = robot_pose3d[0]
+                self.current_y = robot_pose3d[1]
+                self.current_alpha = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]          
+                
+        
+        except:
+            print "tag not in view"
+            self.current_x = -1
+            self.current_y = -1
+            self.current_alpha = -1 
 
     def stop(self):
         wv = WheelVelCmd()
@@ -118,6 +183,99 @@ class Drive(State):
             self.velcmd_pub.publish(wv)
 
         rospy.sleep(.01)
+
+    def drive_simple(self, target_pose2d):
+        self.turn_alpha()
+        self.drive_simple_x()
+        self.drive_simple_y()
+
+    def drive_simple_x(self, desired_delta_x, alpha):
+        wv = WheelVelCmd()
+        wv.desiredWrist = 0.0
+
+        current_delta_x = 0
+        start_enc_count = self.enc_x
+        start_x = self.current_x
+        desired_x = start_x + desired_delta_x
+        k = .1
+
+        if alpha >= 0:
+            turn_direction = self.TURN_LEFT
+        else:
+            turn_direction = self.TURN_RIGHT
+
+        num_tries = 0
+
+        while abs(desired_x-self.current_x) > self.x_threshold:
+            if num_tries > 0:
+                self.turn_alpha(self.current_alpha, -turn_direction)
+
+            while abs(desired_delta_x - self.x_threshold) < current_delta_x < abs(desired_delta_x + self.x_threshold):
+                wv.desiredWV_R = k*(desired_delta_x-current_delta_x)
+                wv.desiredWV_L = k*(desired_delta_x-current_delta_x)
+                self.velcmd_pub.publish(wv)
+                current_delta_x += self.enc_x-start_enc_count
+                
+            wv.desiredWV_R = 0
+            wv.desiredWV_L = 0
+            self.velcmd_pub.publish(wv)
+
+            self.turn_to_tag(turn_direction)
+            self.get_current_point()
+            # resolve current point
+            est_x = start_x + current_delta_x
+            obs_x = self.current_x
+            if abs(est_x - obs_x) > self.model_tolerance: # they are too far off
+                #self.get_current_point() # take the apriltag data
+                self.current_x = est_x
+
+        print "took num_tries:", num_tries, "current_x:", self.current_x, "current_alpha", self.current_alpha
+
+
+    def drive_simple_y(self, desired_delta_y):
+        wv = WheelVelCmd()
+
+    def turn_alpha(self, desired_delta_alpha):
+
+    def turn_to_tag(self, direction):
+        wv = WheelVelCmd()
+
+        while self.current_input not in self.tags_in_view:
+            if direction == self.TURN_RIGHT:
+                wv.desiredWV_R = -0.05
+                wv.desiredWV_L = 0.05
+            elif direction == self.TURN_LEFT:
+                wv.desiredWV_R = 0.05
+                wv.desiredWV_L = -0.05
+            else
+                print "invalid direction"
+            wv.desiredWrist = 0.0
+            self.velcmd_pub.publish(wv)
+
+        wv.desiredWV_R = 0
+        wv.desiredWV_L = 0
+        wv.desiredWrist = 0.0
+        self.velcmd_pub.publish(wv)
+
+    def turn_to_tag_normal(self, direction):
+        wv = WheelVelCmd()
+
+        while self.current_input not in self.tags_in_view:
+            if direction == self.TURN_RIGHT:
+                wv.desiredWV_R = -0.05
+                wv.desiredWV_L = 0.05
+            elif direction == self.TURN_LEFT:
+                wv.desiredWV_R = 0.05
+                wv.desiredWV_L = -0.05
+            else
+                print "invalid direction"
+            wv.desiredWrist = 0.0
+            self.velcmd_pub.publish(wv)
+
+        wv.desiredWV_R = 0
+        wv.desiredWV_L = 0
+        wv.desiredWrist = 0.0
+        self.velcmd_pub.publish(wv)
 
     def drive(self, target_pose2d):
         wv = WheelVelCmd()
