@@ -20,8 +20,8 @@ class Drive(State):
         self.count = 0
 
         self.arrived = False
-        self.far_obstacles = rospy.get_param("field_has_far_obstacles")
-        #self.far_obstacles = False
+        #self.far_obstacles = rospy.get_param("field_has_far_obstacles")
+        self.far_obstacles = False
 
         self.tags_in_view = []
         self.detection_poses = {}

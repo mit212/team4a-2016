@@ -48,10 +48,7 @@ class Search(State):
     def next_input(self):
         return self.current_input # maybe change later
 
-    # update
     def next_state(self):
-        if self.detect_obstacles_next:
-            return detect_obstacles.DetectObstacles(self.next_input())
         return Drive(self.current_input)
 
     def is_finished(self):
