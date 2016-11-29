@@ -5,22 +5,27 @@ import math
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 
-from std_msgs.msg import Bool, ColorRGBA
+from me212base.msg import WheelVelCmd
+from std_msgs.msg import Bool
 from me212cv.msg import DetectedObject
 from sensor_msgs.msg import Image, CameraInfo
 
 from state import State
-import search
+from stop import Stop
 
-class DetectObstacles(State):
+class PrepareToCatch(State):
     def __init__(self, current_input):
         self.current_input = current_input
-        self.obstacles = []
+        self.pokemon = []
         
-        self.object_sub = rospy.Subscriber("/object_info", DetectedObject, self.obstacle_callback, queue_size = 1)
-        rospy.sleep(3)
-        field_has_far_obstacles = self.determine_obstacles()
-        self.classified_obstacles = False
+        self.pikachu = False
+        if current_input == "pikachu":
+            self.pikachu = True
+
+        self.found_pokemon = False
+        self.should_stop = False
+
+        self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
 
         # Publisher for converting a CV Image to a ROS Image
         self.image_pub = rospy.Publisher('/distance_image', Image, queue_size = 1)
@@ -37,44 +42,45 @@ class DetectObstacles(State):
         ts = message_filters.ApproximateTimeSynchronizer([image_sub, depth_sub], 10, 0.5)
         ts.registerCallback(self.rosDistCallBack)
 
-        object_sub = rospy.Subscriber("/object_info", DetectedObject, self.obstacle_callback, queue_size = 1)
-
-        rospy.sleep(3)
+        object_sub = rospy.Subscriber("/object_info", DetectedObject, self.pokemon_callback, queue_size = 1)
 
     def run(self):
-        field_has_far_obstacles = self.determine_obstacles()
-        rospy.set_param("field_has_far_obstacles", field_has_far_obstacles)
-        print "far obstacles:", field_has_far_obstacles
+        wv = WheelVelCmd()
 
-        self.classified_obstacles = True
+        if not self.found_pokemon:
+            print "driving"
+            wv.desiredWV_R = 0.05
+            wv.desiredWV_L = 0.05
+        else:
+            print "stopping"
+            wv.desiredWV_R = 0.0
+            wv.desiredWV_L = 0.0
+            self.should_stop = True
+
+        self.velcmd_pub.publish(wv)
+        rospy.sleep(0.1)
 
     def next_input(self):
         return 0
 
     def next_state(self):
-        return search.Search(self.next_input())
+        return Stop(self.next_input())
 
     def is_finished(self):
-        return self.classified_obstacles
+        return self.should_stop
 
     def is_stop_state(self):
         return False
 
-    def obstacle_callback(self,data):
-        # want to add datapoints with significant width/height
-        if data.width >= 120 and data.height >= 120:
-            self.obstacles.append(data)
-    
-    def determine_obstacles(self):
-        relevant_obstacles = self.obstacles[-5:]
-        print relevant_obstacles
-        far_obs_count = 0
-        near_obs_count = 0
-        for obstacle in relevant_obstacles:
-            if obstacle.center_x >= 165 and obstacle.center_x <= 260 and obstacle.center_y >= 320 and obstacle.center_y <= 390:
-                if obstacle.width >= 350 and obstacle.height >= 170:
-                    return True
-        return False
+    def pokemon_callback(self,data):
+        if self.pikachu:
+            if data.width >= 40 and data.width <= 70 and data.height >= 40 and data.height <= 70:
+                if data.center_x > 300 and data.center_x < 400 and data.center_y > 350 and data.center_y < 450:
+                    self.found_pokemon = True
+        else:
+            if data.width >= 60 and data.height >= 75:
+                if data.center_y > 380 and data.center_y < 400:
+                    self.found_pokemon = True
 
     def rosDistCallBack(self, rgb_data, depth_data):
         try:
@@ -107,8 +113,12 @@ class DetectObstacles(State):
 
     def distanceObjectDetection(self, cv_depthimage):
         # range of acceptable distances
-        lower_dist = 0.3
-        upper_dist = 2.0
+        if self.pikachu:
+            lower_dist = 0.52
+            upper_dist = 0.57
+        else:
+            lower_dist = 0.50
+            upper_dist = 0.55
 
         # Threshold the image to only include objects within the specified distance
         mask = cv2.inRange(cv_depthimage, lower_dist, upper_dist)
@@ -124,4 +134,4 @@ class DetectObstacles(State):
         return contours, mask_eroded_dilated
 
     def __str__(self):
-        return "DetectObstacles(%s)" % (self.current_input)
+        return "PrepareToCatch(%s)" % (self.current_input)

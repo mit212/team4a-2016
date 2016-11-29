@@ -43,12 +43,7 @@ cmd "3.1.2-tf-cam-robotbase" {
     host = "localhost";
 }
 
-cmd "3.2.1-camera-tf" {
-    exec = "roslaunch me212cv frames.launch";
-    host = "localhost";
-}
-
-cmd "3.2.2-apriltag-tf" {
+cmd "3.2-apriltag-tf" {
     exec = "roslaunch apriltags tag_tf.launch";
     host = "localhost";
 }
@@ -154,7 +149,6 @@ script "run-object-detect" {
     wait ms 1000;
     start cmd "3.6.1-kinect";
     start cmd "2-rviz";
-    start cmd "3.2.1-camera-tf";
     start cmd "5-object-detection";
 }
 
@@ -164,11 +158,9 @@ script "run-state-machine" {
     start cmd "1-robot";
     start cmd "2-rviz";
     start cmd "3.1.2-tf-cam-robotbase";
-    start cmd "3.2.1-camera-tf";
-    start cmd "3.2.2-apriltag-tf";
+    start cmd "3.2-apriltag-tf";
     start cmd "3.3-apriltags";
     start cmd "3.4-robotbase";
     start cmd "3.6.1-kinect";
-    start cmd "5-object-detection";
     start cmd "6-state-machine";
 }
