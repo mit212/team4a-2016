@@ -130,6 +130,9 @@ class Catch(State):
 
         return 0
 
+    def __str__(self):
+        return "Catch(%s)" % (self.current_input)
+
 def main():
     rospy.init_node("run_planning")
     run_planning = RunPlanning()

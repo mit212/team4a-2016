@@ -1,10 +1,6 @@
 from state import State
 from search import Search
-<<<<<<< HEAD
 from catch import Catch
-=======
-from prepare_box import PrepareToCatchBox
->>>>>>> origin/integration_test
 
 class Start(State):
     def __init__(self, current_input):
