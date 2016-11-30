@@ -2,6 +2,8 @@ import rospy
 import numpy as np
 import tf
 import tf.transformations as tfm
+import sys
+import traceback
 
 from me212base.msg import WheelVelCmd, ArduinoData
 from apriltags.msg import AprilTagDetections
@@ -82,7 +84,15 @@ class Drive(State):
         self.TURN_RIGHT = 1
         self.TURN_LEFT = -self.TURN_RIGHT
 
+        self.turn_directions = {}
+        self.turn_directions[3] = self.TURN_LEFT
+        self.turn_directions[4] = self.TURN_RIGHT
+        self.turn_directions[5] = self.TURN_LEFT # CHANGE BACK TO self.TURN_LEFT
+        self.turn_directions[6] = self.TURN_LEFT
+        self.turn_directions[9] = self.TURN_LEFT
+
         self.turn_to_tag(self.TURN_RIGHT)
+        rospy.sleep(0.5)
 
     def run(self):
         self.get_current_point()
@@ -128,7 +138,7 @@ class Drive(State):
             #return [self.point0, self.point2b]
             return [self.point0]
         elif self.current_input == 5:
-            return [Pose2D(2.5, 1.7, np.pi/2)]
+            return [Pose2D(2.44, 1.63, np.pi/2)]
         elif self.current_input == 6:
             return [Pose2D(3.05, 1.7, 0)]
         elif self.current_input == 8:
@@ -137,9 +147,9 @@ class Drive(State):
 
     def apriltag_callback(self, data):
         del self.tags_in_view[:]
-        corner_x = []
-        corner_y = []
         for detection in data.detections:
+            corner_x = []
+            corner_y = []
             self.tags_in_view.append(detection.id)
             self.detection_poses[detection.id] = detection.pose
             for point in detection.corners2d:
@@ -180,12 +190,23 @@ class Drive(State):
                 helper.pubFrame(self.br, pose = pose_base_map, frame_id = '/robot_base', parent_frame_id = '/map', npub = 1)
                 robot_pose3d = helper.lookupTransform(self.listener, '/map', '/robot_base')
 
-                self.prev_pos_x.append(robot_pose3d[0])
-                self.prev_pos_y.append(robot_pose3d[1])
-                self.prev_yaw.append(tfm.euler_from_quaternion(robot_pose3d[3:7])[2])
-                self.current_x = robot_pose3d[0]
-                self.current_y = robot_pose3d[1]
-                self.current_theta = tfm.euler_from_quaternion(robot_pose3d[3:7])[2]
+                robot_x = robot_pose3d[0]
+                robot_y = robot_pose3d[1]
+                robot_yaw = tfm.euler_from_quaternion(robot_pose3d[3:7])[2]
+
+                should_append = True
+                if self.current_input in self.turn_directions:
+                    if self.turn_directions[self.current_input] == self.TURN_LEFT:
+                        if robot_yaw <= np.pi/2:
+                            should_append = False
+                    elif self.turn_directions[self.current_input] == self.TURN_RIGHT:
+                        if robot_yaw >= np.pi/2:
+                            should_append = False
+
+                if should_append:
+                    self.prev_pos_x.append(robot_x)
+                    self.prev_pos_y.append(robot_y)
+                    self.prev_yaw.append(robot_yaw)
 
                 # self.current_x = self.kalman_filter(self.prev_pos_x) #sum(self.prev_pos_x) / len(self.prev_pos_x)
                 # self.current_y = self.kalman_filter(self.prev_pos_y) #sum(self.prev_pos_y) / len(self.prev_pos_y)
@@ -195,7 +216,9 @@ class Drive(State):
                 self.current_y = sum(self.prev_pos_y) / len(self.prev_pos_y)
                 self.current_theta = sum(self.prev_yaw) / len(self.prev_yaw)
         except:
-            print "tag not in view"
+            # print "tag not in view"
+            # ex_type, ex, tb = sys.exc_info()
+            # traceback.print_tb(tb)
             self.current_x = -1
             self.current_y = -1
             self.current_theta = -1
@@ -217,10 +240,10 @@ class Drive(State):
     def drive_simple(self, target_pose2d):
         self.turn_alpha(self.current_input)
 
-        desired_delta_x = self.current_x - target_pose2d.x
-        desired_delta_y = self.current_y - target_pose2d.y
+        desired_delta_x = abs(target_pose2d.x - self.current_x)
+        desired_delta_y = target_pose2d.y - self.current_y
 
-        #self.drive_simple_x(desired_delta_x)
+        self.drive_simple_x(desired_delta_x)
         #self.drive_simple_y(desired_delta_y)
         self.arrived = True
 
@@ -232,7 +255,7 @@ class Drive(State):
         start_enc_count = self.enc_x
         start_x = self.current_x
         desired_x = start_x + desired_delta_x
-        k = .1
+        k = .3
 
         if self.alpha >= 0:
             turn_direction = self.TURN_LEFT
@@ -245,7 +268,7 @@ class Drive(State):
             if num_tries > 0:
                 self.turn_alpha(self.current_input)
 
-            while not (abs(desired_delta_x - self.x_threshold) < current_delta_x < abs(desired_delta_x + self.x_threshold)):
+            while not (desired_delta_x - self.x_threshold < current_delta_x < desired_delta_x + self.x_threshold):
                 print "desired_delta_x:", desired_delta_x, "current_delta_x:", current_delta_x
                 wv.desiredWV_R = k*abs(desired_delta_x-current_delta_x)
                 wv.desiredWV_L = k*abs(desired_delta_x-current_delta_x)
@@ -318,7 +341,9 @@ class Drive(State):
         offset = tag_angles[target_tag]
         self.alpha = -(self.current_theta - offset)
 
-        if self.alpha <= 0:
+        if self.current_input in self.turn_directions:
+            turn_direction = self.turn_directions[self.current_input]
+        elif self.alpha <= 0:
             turn_direction = self.TURN_LEFT
         else:
             turn_direction = self.TURN_RIGHT
@@ -327,9 +352,11 @@ class Drive(State):
 
         current_delta_alpha = 0 #how much alpha we have gone, pos if TL/neg if TR
         start_enc_theta = self.enc_theta #what is enc theta right now, before moving?
+        start_enc_x = self.enc_x
+        start_enc_y = self.enc_y
 
         if turn_direction == self.TURN_LEFT:
-            turn_angle = np.pi/2 - self.alpha
+            turn_angle = np.pi/2 - (-self.alpha)
         elif turn_direction == self.TURN_RIGHT:
             turn_angle = self.alpha - np.pi/2
 
@@ -354,6 +381,8 @@ class Drive(State):
         self.velcmd_pub.publish(wv)
         rospy.sleep(0.01)
 
+        self.current_x = self.current_x + (self.enc_x - start_enc_x)
+        self.current_x = self.current_y + (self.enc_y - start_enc_y)
         print "turn_alpha complete"
 
     def turn_to_tag(self, direction):
@@ -372,18 +401,22 @@ class Drive(State):
             self.velcmd_pub.publish(wv)
             rospy.sleep(0.01)
 
-
-        if direction == self.TURN_RIGHT:
-            wv.desiredWV_R = -0.05
-            wv.desiredWV_L = 0.05
-        elif direction == self.TURN_LEFT:
-            wv.desiredWV_R = 0.05
-            wv.desiredWV_L = -0.05
-        else:
-            print "invalid direction"
-        wv.desiredWrist = 0.0
-        self.velcmd_pub.publish(wv)
-        rospy.sleep(0.5)
+        camera_center_x = 320
+        camera_x_threshold = 5
+        tag_x = self.tag_centers[self.current_input][0]
+        while not camera_center_x - camera_x_threshold < tag_x < camera_center_x + camera_x_threshold:
+            print "tag_x", tag_x
+            if direction == self.TURN_RIGHT:
+                wv.desiredWV_R = -0.05
+                wv.desiredWV_L = 0.05
+            elif direction == self.TURN_LEFT:
+                wv.desiredWV_R = 0.05
+                wv.desiredWV_L = -0.05
+            else:
+                print "invalid direction"
+            self.velcmd_pub.publish(wv)    
+            rospy.sleep(0.01)
+            tag_x = self.tag_centers[self.current_input][0]
 
         wv.desiredWV_R = 0
         wv.desiredWV_L = 0
