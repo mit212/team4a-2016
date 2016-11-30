@@ -33,7 +33,7 @@ class Drive(State):
         
         self.apriltag_sub = rospy.Subscriber("/apriltags/detections", AprilTagDetections, self.apriltag_callback, queue_size = 1)
         self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
-        self.arduino_data_sub = rospy.Subscriber("/arduino_data", ArduinoData, self.arduino_data_callback, queue_size = 3)
+        self.arduino_data_sub = rospy.Subscriber("/arduino_data", ArduinoData, self.arduino_data_callback, queue_size = 1)
         
         if current_input - int(current_input) == 0.5:
             self.far_obstacles = True
@@ -54,6 +54,10 @@ class Drive(State):
         self.prev_pos_y = []
         self.prev_yaw = []
 
+        self.accum_x = []
+        self.accum_y = []
+        self.accum_theta = []
+
         self.enc_x = 0
         self.enc_y = 0
         self.enc_theta = 0
@@ -61,25 +65,32 @@ class Drive(State):
         self.is_safe = 0
         self.wrist_bumper_state = 0
 
-        self.current_x, self.current_y, self.current_alpha = self.get_current_point()
+        self.current_x = 0
+        self.current_y = 0
+        self.current_theta = 0
+
+        self.get_current_point()
+
+        self.alpha = 0
 
         self.x_threshold = 0.1
         self.y_threshold = 0.1
-        self.alpha_threshold = 0.1
+        self.theta_threshold = 0.1
 
         self.model_tolerance = 0.8
 
         self.TURN_RIGHT = 1
         self.TURN_LEFT = -self.TURN_RIGHT
 
-
-
     def run(self):
-        if self.current_x == -1:
-            print "bad data"
-        else
-            self.drive_simple()
-
+        self.get_current_point()
+        print self.current_x, self.current_y, self.current_theta
+        if self.current_x == 0:
+            print "bad data, try again"
+        else:
+            target_pose = self.get_target_pose_list()[0]
+            self.drive_simple(target_pose)
+        rospy.sleep(.01)
         #     self.drive(self.current_target)
         #     if self.current_target.arrived:
         #         if self.current_target_index == len(self.target_pose_list) - 1:
@@ -132,23 +143,23 @@ class Drive(State):
                 corner_y.append(point.y)
             center_x = sum(corner_x) / len(corner_x)
             center_y = sum(corner_y) / len(corner_y)
-            self.tag_centers[detection.id].append((center_x, center_y))
+            self.tag_centers[detection.id] = (center_x, center_y)
 
     def arduino_data_callback(self, data):
-        accum_x = []
-        accum_y = []
-        accum_theta = []
+        if len(self.accum_x) >= 3:
+            self.accum_x.pop(0)
+            self.accum_y.pop(0)
+            self.accum_theta.pop(0)
 
-        for data_point in data:
-            accum_x.append(data_point.deltaX)
-            accum_y.append(data_point.deltaY)    
-            accum_theta.append(data_point.deltaTheta)
-            self.is_safe = data_point.isSafe      
-            self.wrist_bumper_state = data_point.wristBumperState
+        self.accum_x.append(data.deltaX)
+        self.accum_y.append(data.deltaY)    
+        self.accum_theta.append(data.deltaTheta)
+        self.is_safe = data.isSafe      
+        self.wrist_bumper_state = data.wristBumperState
 
-        self.enc_x = sum(accum_x)/len(accum_x)
-        self.enc_y = sum(accum_y)/len(accum_y)
-        self.enc_theta = sum(accum_theta)/len(accum_theta)
+        self.enc_x = sum(self.accum_x)/len(self.accum_x)
+        self.enc_y = sum(self.accum_y)/len(self.accum_y)
+        self.enc_theta = sum(self.accum_theta)/len(self.accum_theta)
 
     def get_current_point(self):
         apriltag_source_frame = '/apriltag' + str(self.current_input)
@@ -163,14 +174,13 @@ class Drive(State):
 
                 self.current_x = robot_pose3d[0]
                 self.current_y = robot_pose3d[1]
-                self.current_alpha = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]          
-                
-        
+                self.current_theta = tfm.euler_from_quaternion(robot_pose3d[3:7]) [2]
         except:
             print "tag not in view"
             self.current_x = -1
             self.current_y = -1
-            self.current_alpha = -1 
+            self.current_theta = -1 
+        print "get_current_point", self.current_x, self.current_y, self.current_theta
 
     def stop(self):
         wv = WheelVelCmd()
@@ -185,11 +195,16 @@ class Drive(State):
         rospy.sleep(.01)
 
     def drive_simple(self, target_pose2d):
-        self.turn_alpha()
-        self.drive_simple_x()
-        self.drive_simple_y()
+        self.turn_alpha(self.current_input)
 
-    def drive_simple_x(self, desired_delta_x, alpha):
+        desired_delta_x = self.current_x - target_pose2d.x
+        desired_delta_y = self.current_y - target_pose2d.y
+
+        self.drive_simple_x(desired_delta_x)
+        self.drive_simple_y(desired_delta_y)
+        self.arrived = True
+
+    def drive_simple_x(self, desired_delta_x):
         wv = WheelVelCmd()
         wv.desiredWrist = 0.0
 
@@ -199,7 +214,7 @@ class Drive(State):
         desired_x = start_x + desired_delta_x
         k = .1
 
-        if alpha >= 0:
+        if self.alpha >= 0:
             turn_direction = self.TURN_LEFT
         else:
             turn_direction = self.TURN_RIGHT
@@ -208,9 +223,9 @@ class Drive(State):
 
         while abs(desired_x-self.current_x) > self.x_threshold:
             if num_tries > 0:
-                self.turn_alpha(self.current_alpha, -turn_direction)
+                self.turn_alpha(self.current_input)
 
-            while abs(desired_delta_x - self.x_threshold) < current_delta_x < abs(desired_delta_x + self.x_threshold):
+            while not (abs(desired_delta_x - self.x_threshold) < current_delta_x < abs(desired_delta_x + self.x_threshold)):
                 wv.desiredWV_R = k*(desired_delta_x-current_delta_x)
                 wv.desiredWV_L = k*(desired_delta_x-current_delta_x)
                 self.velcmd_pub.publish(wv)
@@ -229,13 +244,82 @@ class Drive(State):
                 #self.get_current_point() # take the apriltag data
                 self.current_x = est_x
 
-        print "took num_tries:", num_tries, "current_x:", self.current_x, "current_alpha", self.current_alpha
+        print "drive_simple_x complete"
+        print "took num_tries:", num_tries, "current_x:", self.current_x, "current_alpha", self.current_theta
 
 
     def drive_simple_y(self, desired_delta_y):
         wv = WheelVelCmd()
+        wv.desiredWrist = 0.0
 
-    def turn_alpha(self, desired_delta_alpha):
+        current_delta_y = 0
+        start_enc_count = self.enc_y
+        start_y = self.current_y
+        desired_y = start_y + desired_delta_y
+        k = .1
+
+        while not (abs(desired_delta_y - self.y_threshold) < current_delta_y < abs(desired_delta_y + self.y_threshold)):
+            wv.desiredWV_R = k*(desired_delta_y-current_delta_y)
+            wv.desiredWV_L = k*(desired_delta_y-current_delta_y)
+            self.velcmd_pub.publish(wv)
+            current_delta_y += self.enc_y-start_enc_count
+        
+        wv.desiredWV_R = 0
+        wv.desiredWV_L = 0
+        self.velcmd_pub.publish(wv)
+
+        print "drive_simple_y complete"
+
+    def turn_alpha(self, target_tag):
+        print self.current_x, self.current_y, self.current_theta
+        tag_angles = {}
+        tag_angles[6] = 0
+        tag_angles[7] = 0
+        tag_angles[10] = 0
+        tag_angles[2] = np.pi/2
+        tag_angles[4] = np.pi/2
+        tag_angles[5] = np.pi/2
+        tag_angles[0] = np.pi
+        tag_angles[1] = np.pi
+        tag_angles[3] = np.pi
+        tag_angles[8] = 3*np.pi/2
+        tag_angles[8] = 3*np.pi/2
+
+        wv = WheelVelCmd()
+        wv.desiredWrist = 0.0
+
+        offset = tag_angles[target_tag]
+        self.alpha = self.current_theta - offset
+
+        if self.alpha >= 0:
+            turn_direction = self.TURN_LEFT
+        else:
+            turn_direction = self.TURN_RIGHT
+
+        print "alpha", self.alpha, "turn_direction", turn_direction
+
+        current_delta_alpha = 0
+        start_enc_theta = self.enc_theta
+        start_theta = self.current_theta
+
+        while not (abs(self.alpha - self.theta_threshold) < current_delta_alpha < abs(self.alpha + self.theta_threshold)):
+            if turn_direction == self.TURN_LEFT:
+                wv.desiredWV_R = 0.05
+                wv.desiredWV_L = -0.05
+            elif turn_direction == self.TURN_RIGHT:
+                wv.desiredWV_R = -0.05
+                wv.desiredWV_L = 0.05
+            else:
+                print "kbai"
+
+            self.velcmd_pub.publish(wv)
+            current_delta_alpha += self.enc_theta-start_enc_theta
+
+        wv.desiredWV_R = 0
+        wv.desiredWV_L = 0
+        self.velcmd_pub.publish(wv)
+
+        print "turn_alpha complete"
 
     def turn_to_tag(self, direction):
         wv = WheelVelCmd()
@@ -247,7 +331,7 @@ class Drive(State):
             elif direction == self.TURN_LEFT:
                 wv.desiredWV_R = 0.05
                 wv.desiredWV_L = -0.05
-            else
+            else:
                 print "invalid direction"
             wv.desiredWrist = 0.0
             self.velcmd_pub.publish(wv)
@@ -259,6 +343,7 @@ class Drive(State):
 
     def turn_to_tag_normal(self, direction):
         wv = WheelVelCmd()
+        wv.desiredWrist = 0.0
 
         while self.current_input not in self.tags_in_view:
             if direction == self.TURN_RIGHT:
@@ -267,14 +352,27 @@ class Drive(State):
             elif direction == self.TURN_LEFT:
                 wv.desiredWV_R = 0.05
                 wv.desiredWV_L = -0.05
-            else
+            else:
                 print "invalid direction"
-            wv.desiredWrist = 0.0
+            
             self.velcmd_pub.publish(wv)
+
+        camera_center_x = 320
+        camera_x_threshold = 5
+        tag_x = self.tag_centers[self.current_input][0]
+        while not camera_center_x - camera_x_threshold < tag_x < camera_center_x + camera_x_threshold:
+            if direction == self.TURN_RIGHT:
+                wv.desiredWV_R = -0.05
+                wv.desiredWV_L = 0.05
+            elif direction == self.TURN_LEFT:
+                wv.desiredWV_R = 0.05
+                wv.desiredWV_L = -0.05
+            else:
+                print "invalid direction"
+            self.velcmd_pub.publish(wv)    
 
         wv.desiredWV_R = 0
         wv.desiredWV_L = 0
-        wv.desiredWrist = 0.0
         self.velcmd_pub.publish(wv)
 
     def drive(self, target_pose2d):

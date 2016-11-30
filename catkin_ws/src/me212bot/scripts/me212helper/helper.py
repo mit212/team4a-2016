@@ -31,7 +31,7 @@ def pubFrame(br, pose=[0,0,0,0,0,0,1], frame_id='obj', parent_frame_id='map', np
     pos = tuple(pose[0:3])
     
     for j in range(npub):
-        print 'sending'
+        #print 'sending'
         br.sendTransform(pos, ori, rospy.Time.now(), frame_id, parent_frame_id)
         rospy.sleep(0.01)
 

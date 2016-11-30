@@ -58,13 +58,13 @@ class Arduino():
                 ad = ArduinoData()
                 ad.deltaX = x
                 ad.deltaY = y
-                ad.deltaTheta = theta
+                ad.deltaTheta = self.constrain_theta(theta)
                 ad.hertz = hz
                 ad.isSafe = isSafe
                 ad.wristBumperState = wristBumperState
                 self.arduino_data_pub.publish(ad)
 
-                print 'x=', x, ' y=', y, ' theta =', theta, ' hz =', hz, ' isSafe =', isSafe, ' wristBumperState =', wristBumperState; 
+                print 'x=', x, ' y=', y, ' theta =', self.constrain_theta(theta), ' hz =', hz, ' isSafe =', isSafe, ' wristBumperState =', wristBumperState; 
                     
                 self.prevtime = rospy.Time.now()
                 
@@ -74,6 +74,15 @@ class Arduino():
                 ex_type, ex, tb = sys.exc_info()
                 traceback.print_tb(tb)
 
+    def constrain_theta(self, theta_in):
+        theta_out = theta_in
+
+        while theta_out > 2*np.pi:
+            theta_out -= 2*np.pi
+        while theta_out < 0:
+            theta_out += 2*np.pi
+
+        return theta_out 
 
 def main():
     rospy.init_node('me212base_node', anonymous=True)
