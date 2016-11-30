@@ -10,7 +10,7 @@ class Start(State):
         self.can_start = True
     
     def next_input(self):
-        return 2.5
+        return 5
 
     def next_state(self):
         return Search(self.next_input())

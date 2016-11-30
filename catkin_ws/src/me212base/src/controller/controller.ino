@@ -103,6 +103,11 @@ void loop() {
             servoWrist.write(WRIST_UP_POS);
           }
         }
+        else {
+          wheelVelCtrl.doPIControl("Left",  0, encoder.v_L); 
+          wheelVelCtrl.doPIControl("Right", 0, encoder.v_R);
+          servoWrist.write(WRIST_UP_POS);
+        }
         //Serial.print("wrist command: ");
         //Serial.print(serialComm.desiredWrist);
         //Serial.print("\n");

@@ -21,7 +21,7 @@ class Search(State):
             self.detect_obstacles_next = True
             self.current_input = int(current_input)
 
-        self.right_turns = [2, 7, 8]
+        self.right_turns = [2, 7, 8, 5]
         self.left_turns = [0]
 
         self.classified_obstacles = False

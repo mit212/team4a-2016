@@ -58,7 +58,7 @@ class Arduino():
                 ad = ArduinoData()
                 ad.deltaX = x
                 ad.deltaY = y
-                ad.deltaTheta = self.constrain_theta(theta)
+                ad.deltaTheta = theta #self.constrain_theta(theta)
                 ad.hertz = hz
                 ad.isSafe = isSafe
                 ad.wristBumperState = wristBumperState
