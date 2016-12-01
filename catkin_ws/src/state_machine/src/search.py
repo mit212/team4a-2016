@@ -21,8 +21,8 @@ class Search(State):
             self.detect_obstacles_next = True
             self.current_input = int(current_input)
 
-        self.right_turns = [2, 7, 8, 5]
-        self.left_turns = [0]
+        self.right_turns = [2, 7, 5]
+        self.left_turns = [0, 6, 8]
 
         self.classified_obstacles = False
         
@@ -35,12 +35,12 @@ class Search(State):
             wv.desiredWV_L = 0
             self.found_target = True
         elif self.current_input in self.right_turns:
-            wv.desiredWV_R = -0.05  # right, left
-            wv.desiredWV_L = 0.05
+            wv.desiredWV_R = -0.1  # right, left
+            wv.desiredWV_L = 0.1
         else:
             # turn left
-            wv.desiredWV_R = 0.05  # right, left
-            wv.desiredWV_L = -0.05
+            wv.desiredWV_R = 0.1  # right, left
+            wv.desiredWV_L = -0.1
 
         wv.desiredWrist = 0.0
         self.velcmd_pub.publish(wv)

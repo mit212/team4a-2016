@@ -12,6 +12,7 @@ from sensor_msgs.msg import Image, CameraInfo
 
 from state import State
 from stop import Stop
+from catch import Catch
 
 class PrepareToCatch(State):
     def __init__(self, current_input):
@@ -64,7 +65,7 @@ class PrepareToCatch(State):
         return 0
 
     def next_state(self):
-        return Stop(self.next_input())
+        return Catch(self.next_input())
 
     def is_finished(self):
         return self.should_stop

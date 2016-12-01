@@ -1,5 +1,7 @@
 from state import State
 from search import Search
+from drive_distance import DriveDistance
+from prepare_catch import PrepareToCatch
 
 class Start(State):
     def __init__(self, current_input):
@@ -10,7 +12,7 @@ class Start(State):
         self.can_start = True
     
     def next_input(self):
-        return 5
+        return 9
 
     def next_state(self):
         return Search(self.next_input())

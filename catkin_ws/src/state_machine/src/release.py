@@ -14,7 +14,6 @@ from me212base.msg import WheelVelCmd
 
 from state import State
 from stop import Stop
-from drive import Drive
 
 #catch state manages three motions: extending the linear actuator, 
 #                                   rotating the wrist 90 degrees, 
@@ -71,6 +70,8 @@ class Release(State):
                 self.move_flipper(self.FLIPPER_UP_POS-.1)
                 rospy.sleep(.2)
                 self.move_flipper(self.FLIPPER_UP_POS)
+                rospy.sleep(5)
+                self.move_flipper(self.FLIPPER_DOWN_POS)
                 rospy.sleep(.2)
 
                 self.release_success = True
@@ -81,10 +82,10 @@ class Release(State):
         return self.current_input # CHANGE THIS
 
     def next_state(self):
-        return Drive(self.next_input())
+        return Stop(self.next_input())
 
     def is_finished(self):
-        return self.catch_success
+        return self.release_success
 
     def is_stop_state(self):
         return False
@@ -103,7 +104,7 @@ class Release(State):
     def stop(self):
         self.exec_joint1_pub.publish(std_msgs.msg.Float64(0))
 
-     def run_distance(self, distance, speed):
+    def run_distance(self, distance, speed):
         #returns 0 if success, 1 if general error, >1 errorID
 
         #max distance is 15 to traverse the length of the rack gear

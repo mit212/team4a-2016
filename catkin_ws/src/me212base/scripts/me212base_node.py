@@ -64,7 +64,7 @@ class Arduino():
                 ad.wristBumperState = wristBumperState
                 self.arduino_data_pub.publish(ad)
 
-                print 'x=', x, ' y=', y, ' theta =', self.constrain_theta(theta), ' hz =', hz, ' isSafe =', isSafe, ' wristBumperState =', wristBumperState; 
+                print 'x=', x, ' y=', y, ' theta =', theta, ' hz =', hz, ' isSafe =', isSafe, ' wristBumperState =', wristBumperState; 
                     
                 self.prevtime = rospy.Time.now()
                 

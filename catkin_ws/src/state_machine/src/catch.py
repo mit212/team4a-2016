@@ -10,11 +10,11 @@ import tf.transformations as tfm
 from end_effector.msg import end_effector
 import me212helper.helper as helper
 import std_msgs.msg, sensor_msgs.msg, dynamixel_msgs.msg
-from me212base.msg import WheelVelCmd
+from me212base.msg import WheelVelCmd, ArduinoData
 
 from state import State
 from stop import Stop
-from drive import Drive
+#from drive import Drive
 
 #catch state manages three motions: extending the linear actuator, 
 #                                   rotating the wrist 90 degrees, 
@@ -33,9 +33,13 @@ class Catch(State):
         self.WRIST_UP = 0
         self.WRIST_DOWN = 1
 
+        self.wrist_bumper_state = 0
+        self.PRESSED = 1
+
         self.exec_joint1_pub = rospy.Publisher('/joint1_controller/command', std_msgs.msg.Float64, queue_size=1)
         self.robotjoints = rospy.Subscriber('/joint1_controller/state', dynamixel_msgs.msg.JointState, self.end_effector_callback, queue_size=1)
         self.velcmd_pub = rospy.Publisher("/cmdvel", WheelVelCmd, queue_size = 1)
+        self.arduino_data_sub = rospy.Subscriber("/arduino_data", ArduinoData, self.arduino_data_callback, queue_size = 1)
         rospy.sleep(1)
 
         self.thread = threading.Thread(target = self.run)
@@ -45,6 +49,7 @@ class Catch(State):
         
     def run(self):
         rospy.sleep(0.2)
+        self.zero_arm()
         self.zero_pos = self.position
         run = True
 
@@ -53,11 +58,11 @@ class Catch(State):
         while (not rospy.is_shutdown()) and (not self.catch_success):
             if not self.catch_success:
                 self.move_wrist(self.WRIST_UP)   
-                self.run_distance(15, 20.0)
+                self.run_distance(14, 20.0)
                 self.stop()
 
                 self.move_wrist(self.WRIST_DOWN)
-                self.run_distance(15, -20.0)
+                self.run_distance(14, -20.0)
                 rospy.sleep(.5)
                 self.move_wrist(self.WRIST_UP)
                 self.stop()
@@ -69,7 +74,8 @@ class Catch(State):
         return self.current_input # CHANGE THIS
 
     def next_state(self):
-        return Drive(self.next_input())
+        #return Drive(self.next_input())
+        return Stop(self.next_input())
 
     def is_finished(self):
         return self.catch_success
@@ -82,6 +88,11 @@ class Catch(State):
         self.position = data.current_pos
         self.load = data.load
         #self.current_pos = self.position-self.zero_pos
+
+    def arduino_data_callback(self, data):  
+        self.wrist_bumper_state = data.wristBumperState
+
+
     def stop(self):
         self.exec_joint1_pub.publish(std_msgs.msg.Float64(0))
 
@@ -129,6 +140,13 @@ class Catch(State):
         self.velcmd_pub.publish(wv)  
 
         return 0
+
+    def zero_arm(self):
+        while not self.wrist_bumper_state == self.PRESSED:
+            self.exec_joint1_pub.publish(std_msgs.msg.Float64(-4))
+            rospy.sleep(0.01)
+        self.exec_joint1_pub.publish(std_msgs.msg.Float64(0))
+        rospy.sleep(0.01)
 
     def __str__(self):
         return "Catch(%s)" % (self.current_input)
