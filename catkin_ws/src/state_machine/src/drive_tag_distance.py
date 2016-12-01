@@ -96,7 +96,7 @@ class DriveUntilTagDistance(State):
         elif self.tag_id == 4:
             return 9
         elif self.tag_id == 9:
-            return (7, 320, self.TURN_LEFT)
+            return (7, 480, self.TURN_LEFT)
         elif self.tag_id == 7:
             return 8
         else: 
