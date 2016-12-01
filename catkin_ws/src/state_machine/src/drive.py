@@ -91,6 +91,7 @@ class Drive(State):
         self.current_x = 0
         self.current_y = 0
         self.current_theta = 0
+        self.saved_theta = 0;
 
         self.get_current_point()
 
@@ -113,6 +114,7 @@ class Drive(State):
         self.turn_directions[5] = self.TURN_LEFT # CHANGE BACK TO self.TURN_LEFT
         self.turn_directions[6] = self.TURN_LEFT
         self.turn_directions[9] = self.TURN_LEFT
+        self.turn_directions[8] = self.TURN_LEFT
 
         self.tag_angles = {}
         self.tag_angles[6] = 0
@@ -127,7 +129,8 @@ class Drive(State):
         self.tag_angles[8] = -np.pi/2
         self.tag_angles[9] = -np.pi/2
 
-        self.turn_to_tag(self.turn_directions[current_input])
+        #self.turn_to_tag(self.turn_directions[current_input])
+        self.turn_to_tag(-self.turn_directions[current_input])
         #for 6, TL
         rospy.sleep(0.5)
 
@@ -135,6 +138,7 @@ class Drive(State):
         self.filtering_on = True
         self.get_current_point()
         #print self.current_x, self.current_y, self.current_theta
+        self.saved_theta = self.current_theta
         print "apriltag_distance", self.apriltag_distance
         print "tag center", self.tag_centers[self.current_input]
         if self.current_x == 0:
@@ -201,10 +205,10 @@ class Drive(State):
             return [Pose2D(2.90, 1.80, 0.64)]
 
         elif self.current_input == 8:
-            return [Pose2D(3.05, 1.1, 1)]
+            return [Pose2D(3.07, 1.1, 0.8)]
 
         elif self.current_input == 9:
-            return [Pose2D(1.97, 1.1, 1)]
+            return [Pose2D(1.98, 1.1, 1)]
 
         return [Pose2D(0, 0, 0)]
 
@@ -319,11 +323,12 @@ class Drive(State):
 
         if self.tag_angles[self.current_input] == np.pi/2 or self.tag_angles[self.current_input] == -np.pi/2:
             desired_delta_x = abs(self.current_x - target_pose2d.x)
-            self.drive_simple_x(desired_delta_x)
+            self.drive_simple_y(desired_delta_x)
+
         elif self.tag_angles[self.current_input] == np.pi or self.tag_angles[self.current_input] == 0:
             desired_delta_y = abs(self.current_y - target_pose2d.y)
             print "self.current_y", self.current_y, "desired_delta_y", desired_delta_y
-            self.drive_simple_y(desired_delta_y)
+            self.drive_simple_x(desired_delta_y)
         else:
             print "kbai"
 
@@ -379,7 +384,7 @@ class Drive(State):
                 rospy.sleep(0.01)
 
                 prev_enc_count = self.enc_x
-                print "current encoder count", prev_enc_count - start_enc_count, "current_delta_x:", current_delta_x
+                print "desired_delta_x", desired_delta_x, "current_delta_x:", current_delta_x
                 
             wv.desiredWV_R = 0
             wv.desiredWV_L = 0

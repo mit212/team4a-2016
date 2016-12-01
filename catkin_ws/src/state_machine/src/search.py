@@ -21,7 +21,7 @@ class Search(State):
             self.detect_obstacles_next = True
             self.current_input = int(current_input)
 
-        self.right_turns = [2, 7, 5]
+        self.right_turns = [7, 5, 9]
         self.left_turns = [0, 6, 8]
 
         self.classified_obstacles = False
@@ -34,6 +34,9 @@ class Search(State):
             wv.desiredWV_R = 0  # right, left
             wv.desiredWV_L = 0
             self.found_target = True
+        elif self.current_input == 2:
+            wv.desiredWV_R = 0  # right, left
+            wv.desiredWV_L = 0
         elif self.current_input in self.right_turns:
             wv.desiredWV_R = -0.1  # right, left
             wv.desiredWV_L = 0.1
@@ -50,6 +53,8 @@ class Search(State):
         return self.current_input # maybe change later
 
     def next_state(self):
+        if self.detect_obstacles_next:
+            return detect_obstacles.DetectObstacles(self.current_input)
         return Drive(self.current_input)
 
     def is_finished(self):

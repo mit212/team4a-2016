@@ -14,7 +14,9 @@ from me212base.msg import WheelVelCmd, ArduinoData
 
 from state import State
 from stop import Stop
+from drive_distance import DriveDistance
 #from drive import Drive
+from drive_tag_distance import DriveUntilTagDistance
 
 #catch state manages three motions: extending the linear actuator, 
 #                                   rotating the wrist 90 degrees, 
@@ -49,7 +51,8 @@ class Catch(State):
         
     def run(self):
         rospy.sleep(0.2)
-        self.zero_arm()
+        self.zero_pos = self.position
+        #self.zero_arm()
         self.zero_pos = self.position
         run = True
 
@@ -58,11 +61,21 @@ class Catch(State):
         while (not rospy.is_shutdown()) and (not self.catch_success):
             if not self.catch_success:
                 self.move_wrist(self.WRIST_UP)   
-                self.run_distance(14, 20.0)
+                self.run_distance(15, 20.0)
                 self.stop()
 
                 self.move_wrist(self.WRIST_DOWN)
-                self.run_distance(14, -20.0)
+                self.run_distance(15, -20.0)
+                rospy.sleep(.5)
+                self.move_wrist(self.WRIST_UP)
+                self.stop()
+
+                self.move_wrist(self.WRIST_UP)   
+                self.run_distance(15, 20.0)
+                self.stop()
+
+                self.move_wrist(self.WRIST_DOWN)
+                self.run_distance(15, -20.0)
                 rospy.sleep(.5)
                 self.move_wrist(self.WRIST_UP)
                 self.stop()
@@ -71,11 +84,13 @@ class Catch(State):
         rospy.sleep(0.3)
     
     def next_input(self):
-        return self.current_input # CHANGE THIS
+        if self.current_input == "pikachu":
+            return (0.6, -.1, "Search", 5)
+        else:
+            return (0.1, -0.3, "DriveUntilTagDistance", (9, 0.8))
 
     def next_state(self):
-        #return Drive(self.next_input())
-        return Stop(self.next_input())
+        return DriveDistance(self.next_input())
 
     def is_finished(self):
         return self.catch_success
@@ -143,7 +158,7 @@ class Catch(State):
 
     def zero_arm(self):
         while not self.wrist_bumper_state == self.PRESSED:
-            self.exec_joint1_pub.publish(std_msgs.msg.Float64(-4))
+            self.exec_joint1_pub.publish(std_msgs.msg.Float64(-1))
             rospy.sleep(0.01)
         self.exec_joint1_pub.publish(std_msgs.msg.Float64(0))
         rospy.sleep(0.01)

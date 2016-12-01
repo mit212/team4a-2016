@@ -13,7 +13,8 @@ from apriltags.msg import AprilTagDetections
 from sensor_msgs.msg import Image, CameraInfo
 import me212helper.helper as helper
 
-from prepare_catch import PrepareToCatch
+import drive_tag_distance
+#from prepare_catch import PrepareToCatch
 from state import State
 from stop import Stop
 from release import Release
@@ -70,6 +71,8 @@ class DriveDistance(State):
             return search.Search(self.next_input())
         elif input_state == "PrepareToCatch":
             return PrepareToCatch(self.next_input())
+        elif input_state == "DriveUntilTagDistance":
+            return drive_tag_distance.DriveUntilTagDistance(self.next_input())
         else:
             print "DriveDistance --> Stop()"
             return Stop(self.next_input())

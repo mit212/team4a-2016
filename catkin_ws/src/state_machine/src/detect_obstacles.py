@@ -11,6 +11,7 @@ from sensor_msgs.msg import Image, CameraInfo
 
 from state import State
 import search
+from turn_tag_position import TurnTagPosition
 
 class DetectObstacles(State):
     def __init__(self, current_input):
@@ -49,10 +50,10 @@ class DetectObstacles(State):
         self.classified_obstacles = True
 
     def next_input(self):
-        return 0
+        return (0, 150, -1)
 
     def next_state(self):
-        return search.Search(self.next_input())
+        return TurnTagPosition(self.next_input())
 
     def is_finished(self):
         return self.classified_obstacles
