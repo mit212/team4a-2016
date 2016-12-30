@@ -1,13 +1,10 @@
-# team 4a
-
-me212base:
-*scripts/me212base_node.py:* reading data from Arduino, not doing anything with it; only use as a reference
-*src/controller:* probably delete
+# 2.12 Team 4A Fall 2016
 
 
-me212bot:
-*src/controller/controller.ino:* good Arduino code start, add to as we go
-*helper.cpp*: clean up, split into separate files
+This is our code that autonomously controls the 2.12 robot to find, capture, and release pokemon around the field.
 
-apriltags:
-*src/apriltags.cpp*: DON'T TOUCH
+
+The main logic is in the state_machine directory. Other directories contain relevant code for running parts of the robot that aren't directly related to completing the high-level tasks. The Procman Sheriff tool was used to run the ros nodes, with the script containing that data under the software/config directory.
+
+
+All this code is from the Fall 2016 semester of MIT's class 2.12: Introduction to Robotics
