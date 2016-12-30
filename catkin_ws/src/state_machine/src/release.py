@@ -15,9 +15,10 @@ from me212base.msg import WheelVelCmd
 from state import State
 from stop import Stop
 
-#catch state manages three motions: extending the linear actuator, 
-#                                   rotating the wrist 90 degrees, 
-#                                   and retracting the linear actuator
+# catch state manages three motions:
+#   extending the linear actuator, 
+#   rotating the wrist 90 degrees, and
+#   retracting the linear actuator
 
 
 class Release(State):
@@ -79,7 +80,7 @@ class Release(State):
         rospy.sleep(0.3)
     
     def next_input(self):
-        return self.current_input # CHANGE THIS
+        return self.current_input
 
     def next_state(self):
         return Stop(self.next_input())
@@ -105,12 +106,12 @@ class Release(State):
         self.exec_joint1_pub.publish(std_msgs.msg.Float64(0))
 
     def run_distance(self, distance, speed):
-        #returns 0 if success, 1 if general error, >1 errorID
+        # returns 0 if success, 1 if general error, >1 errorID
 
-        #max distance is 15 to traverse the length of the rack gear
-        #make sure that 0 <= distance <= 15
+        # max distance is 15 to traverse the length of the rack gear
+        # make sure that 0 <= distance <= 15
 
-        #speed is a float, positive for CCW, negative for CW, 20 is max...
+        # speed is a float, positive for CCW, negative for CW, 20 is max...
 
         if not (distance >=0 and distance <= 15):
             print "distance argument invalid"
@@ -143,7 +144,7 @@ class Release(State):
 
     def move_wrist(self, position):
         wv = WheelVelCmd()
-        wv.desiredWV_R = 0  # don't move...
+        wv.desiredWV_R = 0  # don't move the wheels
         wv.desiredWV_L = 0
         wv.desiredWrist = position
         self.velcmd_pub.publish(wv)    
