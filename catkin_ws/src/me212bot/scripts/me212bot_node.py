@@ -31,7 +31,6 @@ class Arduino():
         self.prevtime = rospy.Time.now()
         
         self.velcmd_sub = rospy.Subscriber("/cmdvel", WheelVelCmd, self.cmdvel)
-        
 
     def cmdvel(self, msg):  
         self.comm.write("%f,%f,%f\n" % (msg.desiredWV_R, msg.desiredWV_L, msg.desiredWrist))

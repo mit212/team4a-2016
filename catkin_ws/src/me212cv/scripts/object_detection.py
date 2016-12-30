@@ -275,4 +275,3 @@ def poselist2pose(poselist):
 
 if __name__=='__main__':
     main()
-    
