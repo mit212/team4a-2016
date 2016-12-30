@@ -15,12 +15,12 @@ from me212base.msg import WheelVelCmd, ArduinoData
 from state import State
 from stop import Stop
 from drive_distance import DriveDistance
-#from drive import Drive
 from drive_tag_distance import DriveUntilTagDistance
 
-#catch state manages three motions: extending the linear actuator, 
-#                                   rotating the wrist 90 degrees, 
-#                                   and retracting the linear actuator
+# catch state manages three motions: 
+#   extending the linear actuator, 
+#   rotating the wrist 90 degrees, and
+#   retracting the linear actuator
 
 
 class Catch(State):
@@ -52,7 +52,6 @@ class Catch(State):
     def run(self):
         rospy.sleep(0.2)
         self.zero_pos = self.position
-        #self.zero_arm()
         self.zero_pos = self.position
         run = True
 
@@ -102,7 +101,6 @@ class Catch(State):
         self.velocity = data.velocity
         self.position = data.current_pos
         self.load = data.load
-        #self.current_pos = self.position-self.zero_pos
 
     def arduino_data_callback(self, data):  
         self.wrist_bumper_state = data.wristBumperState
@@ -112,12 +110,12 @@ class Catch(State):
         self.exec_joint1_pub.publish(std_msgs.msg.Float64(0))
 
     def run_distance(self, distance, speed):
-        #returns 0 if success, 1 if general error, >1 errorID
+        # returns 0 if success, 1 if general error, >1 errorID
 
-        #max distance is 15 to traverse the length of the rack gear
-        #make sure that 0 <= distance <= 15
+        # max distance is 15 to traverse the length of the rack gear
+        # make sure that 0 <= distance <= 15
 
-        #speed is a float, positive for CCW, negative for CW, 20 is max...
+        # speed is a float, positive for CCW, negative for CW, 20 is max...
 
         if not (distance >=0 and distance <= 15):
             print "distance argument invalid"
@@ -135,7 +133,6 @@ class Catch(State):
             self.exec_joint1_pub.publish(std_msgs.msg.Float64(speed))
             increment = abs(self.position-last_pos)
             load_inc = abs(self.load - last_load)
-            #print "elapsed distance:", elapsed_distance
             if increment < 3.0:
                 elapsed_distance += increment
             last_pos = self.position
@@ -149,7 +146,7 @@ class Catch(State):
 
     def move_wrist(self, position):
         wv = WheelVelCmd()
-        wv.desiredWV_R = 0  # don't move...
+        wv.desiredWV_R = 0  # don't move wheels
         wv.desiredWV_L = 0
         wv.desiredWrist = position
         self.velcmd_pub.publish(wv)  
