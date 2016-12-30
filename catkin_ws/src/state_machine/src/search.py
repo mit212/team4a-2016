@@ -31,18 +31,18 @@ class Search(State):
 
         if self.current_input in self.tags_in_view:
             print "found target"
-            wv.desiredWV_R = 0  # right, left
+            wv.desiredWV_R = 0
             wv.desiredWV_L = 0
             self.found_target = True
         elif self.current_input == 2:
-            wv.desiredWV_R = 0  # right, left
+            wv.desiredWV_R = 0
             wv.desiredWV_L = 0
         elif self.current_input in self.right_turns:
-            wv.desiredWV_R = -0.1  # right, left
+            wv.desiredWV_R = -0.1
             wv.desiredWV_L = 0.1
         else:
             # turn left
-            wv.desiredWV_R = 0.1  # right, left
+            wv.desiredWV_R = 0.1
             wv.desiredWV_L = -0.1
 
         wv.desiredWrist = 0.0
@@ -50,7 +50,7 @@ class Search(State):
         rospy.sleep(.01)
     
     def next_input(self):
-        return self.current_input # maybe change later
+        return self.current_input
 
     def next_state(self):
         if self.detect_obstacles_next:
@@ -66,7 +66,6 @@ class Search(State):
     def apriltag_callback(self, data):
         del self.tags_in_view[:]
         for detection in data.detections:
-            #print detection.pose.position.x, detection.pose.position.y, detection.pose.position.z
             self.tags_in_view.append(detection.id)
 
     def __str__(self):
