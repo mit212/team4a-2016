@@ -14,7 +14,6 @@ from sensor_msgs.msg import Image, CameraInfo
 import me212helper.helper as helper
 
 import drive_tag_distance
-#from prepare_catch import PrepareToCatch
 from state import State
 from stop import Stop
 from release import Release
@@ -23,7 +22,7 @@ import search
 class DriveDistance(State):
     def __init__(self, current_input):
         self.current_input = current_input
-        #current_input -> tuple, (distance, speed, next_state, next_input)
+        # current_input -> tuple, (distance, speed, next_state, next_input)
 
         self.arrived = False
 
@@ -64,7 +63,7 @@ class DriveDistance(State):
         return self.current_input[3]
 
     def next_state(self):
-        input_state = self.current_input[2] #this is a string
+        input_state = self.current_input[2] # this is a string
         if input_state == "Drive":
             return Drive(self.next_input())
         elif input_state == "Search":
