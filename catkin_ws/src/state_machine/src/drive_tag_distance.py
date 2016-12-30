@@ -23,7 +23,7 @@ import turn_tag_position
 class DriveUntilTagDistance(State):
     def __init__(self, current_input):
         self.current_input = current_input
-        #current_input -> tuple, (tag_id, desired_distance_away)
+        # current_input -> tuple, (tag_id, desired_distance_away)
 
         self.tag_id = current_input[0]
         self.desired_dist_away = current_input[1]
@@ -90,9 +90,9 @@ class DriveUntilTagDistance(State):
 
     def next_input(self):
         if self.tag_id == 0:
-            return (2, 220, self.TURN_RIGHT) # was 187
+            return (2, 220, self.TURN_RIGHT)
         elif self.tag_id == 2:
-            return (4, 230, self.TURN_RIGHT) # was 187
+            return (4, 230, self.TURN_RIGHT)
         elif self.tag_id == 4:
             return 9
         elif self.tag_id == 9:
