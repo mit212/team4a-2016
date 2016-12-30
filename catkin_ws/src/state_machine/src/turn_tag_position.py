@@ -61,10 +61,10 @@ class TurnTagPosition(State):
                 wv.desiredWV_L = 0
                 self.arrived = True
         else:
-            if self.turn_direction == self.TURN_LEFT: #was TL
+            if self.turn_direction == self.TURN_LEFT:
                 wv.desiredWV_R = 0.1
                 wv.desiredWV_L = 0 
-            elif self.turn_direction == self.TURN_RIGHT: #was TR
+            elif self.turn_direction == self.TURN_RIGHT:
                 wv.desiredWV_R = 0
                 wv.desiredWV_L = 0.1
             else:
