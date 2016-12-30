@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
-# 2.12 Lab 5 joint publisher from dynamixel
-# Peter Yu Oct 2016
+# adapted from 2.12 Lab 5 code
 
 import dynamixel_msgs.msg
 import sensor_msgs.msg

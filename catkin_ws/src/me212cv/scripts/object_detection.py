@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
-# 2.12 Lab 4 object detection: a node for detecting objects
-# Peter Yu Oct 2016
+# adapted from 2.12 Lab 4 code
 
 import rospy
 import numpy as np
