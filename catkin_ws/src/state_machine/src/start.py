@@ -13,13 +13,10 @@ class Start(State):
         self.can_start = True
     
     def next_input(self):
-        #return 2.5 #return (0, 150, -1)
-        #return 8
-        return "pokemon"
+        return 2.5
 
     def next_state(self):
-        return PrepareToCatch(self.next_input())
-        #return Search(self.next_input())#PrepareToCatch(self.next_input())#earch(self.next_input()) #return TurnTagPosition(self.next_input())
+        return Search(self.next_input())
 
     def is_finished(self):
         return self.can_start
