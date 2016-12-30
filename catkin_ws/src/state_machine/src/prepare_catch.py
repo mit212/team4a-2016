@@ -118,8 +118,8 @@ class PrepareToCatch(State):
             lower_dist = 0.52
             upper_dist = 0.57
         else:
-            lower_dist = 0.47 #0.50
-            upper_dist = 0.52 #0.55
+            lower_dist = 0.47
+            upper_dist = 0.52
 
         # Threshold the image to only include objects within the specified distance
         mask = cv2.inRange(cv_depthimage, lower_dist, upper_dist)
